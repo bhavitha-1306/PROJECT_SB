@@ -137,13 +137,6 @@ export const InkLinkLanding: React.FC = () => {
             >
               Sign Up
             </button>
-            <button 
-              onClick={() => handleScrollTo('estimator')}
-              className="btn-secondary" 
-              style={{ padding: '8px 20px', fontSize: '13px' }}
-            >
-              Order Now ↗
-            </button>
           </div>
         </div>
       </header>
