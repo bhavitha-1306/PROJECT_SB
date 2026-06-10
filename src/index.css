@@ -1,0 +1,323 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@300;400;500;600;700;800;900&family=Caveat:wght@400;700&family=Reenie+Beanie&family=Architects+Daughter&family=Shadows+Into+Light&family=Patrick+Hand&display=swap');
+
+:root {
+  /* Colors */
+  --bg-sand: #F7F5F0;
+  --bg-card: #FFFFFF;
+  --bg-dark: #0F0F11;
+  --text-dark: #151515;
+  --text-muted: #5E5D59;
+  --text-light: #F7F5F0;
+  --accent-orange: #FF5500;
+  --accent-orange-hover: #E04B00;
+  --accent-ink: #1043CA;
+  --accent-green: #0FA958;
+  
+  --border-editorial: #151515;
+  --border-light: rgba(21, 21, 21, 0.08);
+  --border-white: rgba(247, 245, 240, 0.15);
+
+  /* Fonts */
+  --font-display: 'Outfit', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+
+  /* Custom Transitions */
+  --transition-smooth: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Reset & Base Elements */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background-color: var(--bg-sand);
+  color: var(--text-dark);
+  font-family: var(--font-sans);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+  position: relative;
+}
+
+/* Paper Grain Overlay Effect */
+body::before {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  opacity: 0.035;
+  pointer-events: none;
+  z-index: 9999;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-display);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  text-transform: uppercase;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+  background: none;
+  border: none;
+  color: inherit;
+}
+
+input, textarea, select {
+  font-family: inherit;
+  font-size: inherit;
+  background: none;
+  border: none;
+  color: inherit;
+}
+
+/* Grid Layout System (Veson-inspired) */
+.editorial-grid {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  width: 100%;
+}
+
+.border-bottom {
+  border-bottom: 1px solid var(--border-editorial);
+}
+
+.border-top {
+  border-top: 1px solid var(--border-editorial);
+}
+
+.border-left {
+  border-left: 1px solid var(--border-editorial);
+}
+
+.border-right {
+  border-right: 1px solid var(--border-editorial);
+}
+
+/* Responsive grid padding/margins */
+.section-container {
+  max-width: 1440px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+/* Custom Typography */
+.font-display-condensed {
+  font-family: var(--font-display);
+  font-weight: 900;
+  letter-spacing: -0.04em;
+  line-height: 0.9;
+}
+
+/* Navigation Styles */
+.nav-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 24px 40px;
+  width: 100%;
+}
+
+.nav-links {
+  display: flex;
+  gap: 32px;
+  font-weight: 500;
+  font-size: 14px;
+}
+
+.nav-links a {
+  position: relative;
+  padding: 4px 0;
+}
+
+.nav-links a::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 0;
+  height: 1.5px;
+  background-color: var(--text-dark);
+  transition: var(--transition-smooth);
+}
+
+.nav-links a:hover::after {
+  width: 100%;
+}
+
+/* UI Elements */
+.pill-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 9999px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.badge-orange {
+  background-color: var(--accent-orange);
+  color: var(--bg-sand);
+}
+
+.badge-outline {
+  border: 1px solid var(--border-editorial);
+}
+
+/* Premium Buttons */
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  background-color: var(--border-editorial);
+  color: var(--bg-sand);
+  padding: 14px 28px;
+  border-radius: 9999px;
+  font-weight: 600;
+  font-size: 14px;
+  transition: var(--transition-smooth);
+  box-shadow: 0 4px 0 var(--accent-orange);
+  border: 1px solid var(--border-editorial);
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 0 var(--accent-orange);
+}
+
+.btn-primary:active {
+  transform: translateY(2px);
+  box-shadow: 0 0px 0 var(--accent-orange);
+}
+
+.btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  background-color: transparent;
+  color: var(--text-dark);
+  padding: 14px 28px;
+  border-radius: 9999px;
+  font-weight: 600;
+  font-size: 14px;
+  border: 1.5px solid var(--border-editorial);
+  transition: var(--transition-smooth);
+}
+
+.btn-secondary:hover {
+  background-color: var(--border-editorial);
+  color: var(--bg-sand);
+  transform: translateY(-1px);
+}
+
+/* Notebook Lined Paper Simulation */
+.notebook-container {
+  background-color: #FFFFFF;
+  border: 1.5px solid var(--border-editorial);
+  box-shadow: 6px 6px 0 var(--border-editorial);
+  position: relative;
+  overflow: hidden;
+}
+
+.notebook-header {
+  height: 48px;
+  border-bottom: 1px solid rgba(255, 0, 0, 0.15);
+  background: repeating-linear-gradient(
+    90deg,
+    transparent,
+    transparent 20px,
+    rgba(255, 0, 0, 0.05) 21px
+  );
+  display: flex;
+  align-items: center;
+  padding: 0 24px;
+  font-size: 11px;
+  font-family: monospace;
+  color: var(--text-muted);
+}
+
+.notebook-paper {
+  min-height: 280px;
+  padding: 20px 24px 20px 48px;
+  position: relative;
+  background-color: #FAFAFA;
+  background-image: linear-gradient(rgba(16, 67, 202, 0.08) 1.5px, transparent 1.5px);
+  background-size: 100% 28px;
+  line-height: 28px;
+  outline: none;
+}
+
+/* Red Margin Line */
+.notebook-paper::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 36px;
+  width: 1.5px;
+  height: 100%;
+  background-color: rgba(255, 0, 0, 0.25);
+}
+
+/* Custom Scrollbars */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-sand);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--text-muted);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-dark);
+}
+
+/* Layout Utilities */
+.grid-lines {
+  position: relative;
+}
+
+/* Micro-animations */
+@keyframes pulseGlow {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 0.9; }
+}
+
+.animate-pulse-slow {
+  animation: pulseGlow 3s infinite ease-in-out;
+}
+
+/* Toast styles */
+.toast-container {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 10000;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
