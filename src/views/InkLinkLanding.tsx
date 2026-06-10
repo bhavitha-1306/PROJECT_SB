@@ -104,7 +104,39 @@ export const InkLinkLanding: React.FC = () => {
             <a href="#directory" onClick={(e) => { e.preventDefault(); handleScrollTo('directory'); }}>Our Writers</a>
           </nav>
 
-          <div style={{ display: 'flex', gap: '14px', alignItems: 'center' }}>
+          <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
+            <button 
+              onClick={() => alert('Login flow simulator (Phase 2 feature)')}
+              style={{ fontSize: '14px', fontWeight: '600', color: 'var(--text-dark)', cursor: 'pointer', transition: 'var(--transition-smooth)' }}
+              onMouseOver={(e) => e.currentTarget.style.color = 'var(--accent-orange)'}
+              onMouseOut={(e) => e.currentTarget.style.color = 'var(--text-dark)'}
+            >
+              Login
+            </button>
+            <button 
+              onClick={() => alert('Sign up flow simulator (Phase 2 feature)')}
+              style={{ 
+                padding: '8px 18px', 
+                fontSize: '13px', 
+                fontWeight: '700', 
+                borderRadius: '9999px', 
+                backgroundColor: 'var(--border-editorial)', 
+                color: 'var(--bg-sand)',
+                border: '1.5px solid var(--border-editorial)',
+                cursor: 'pointer',
+                transition: 'var(--transition-smooth)'
+              }}
+              onMouseOver={(e) => {
+                e.currentTarget.style.backgroundColor = 'transparent';
+                e.currentTarget.style.color = 'var(--text-dark)';
+              }}
+              onMouseOut={(e) => {
+                e.currentTarget.style.backgroundColor = 'var(--border-editorial)';
+                e.currentTarget.style.color = 'var(--bg-sand)';
+              }}
+            >
+              Sign Up
+            </button>
             <button 
               onClick={() => handleScrollTo('estimator')}
               className="btn-secondary" 
