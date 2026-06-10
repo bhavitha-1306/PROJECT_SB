@@ -237,34 +237,34 @@ export const PriceEstimator: React.FC = () => {
                 <p style={{ fontSize: '11px', color: 'var(--text-muted)', margin: '4px 0 0 0', fontFamily: 'monospace' }}>ESTIMATE ID: #IL-{Math.floor(Math.random() * 900000 + 100000)}</p>
               </div>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '24px', fontSize: '13px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '24px', fontSize: '13px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1.5px solid var(--border-light)', paddingBottom: '8px' }}>
                   <span style={{ color: 'var(--text-muted)' }}>Base Page Rate ({writerRank})</span>
                   <span style={{ fontWeight: '600' }}>₹{getBaseRatePerPage()} / page</span>
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1.5px solid var(--border-light)', paddingBottom: '8px' }}>
                   <span style={{ color: 'var(--text-muted)' }}>Complexity Multiplier</span>
                   <span style={{ fontWeight: '600' }}>x {getComplexityMultiplier()}</span>
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1.5px solid var(--border-light)', paddingBottom: '8px' }}>
                   <span style={{ color: 'var(--text-muted)' }}>Rush Delivery Charge</span>
                   <span style={{ fontWeight: '600' }}>x {getDeadlineMultiplier()}</span>
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid var(--border-light)', paddingTop: '10px' }}>
-                  <span style={{ color: 'var(--text-muted)' }}>Rate per page (Final)</span>
-                  <span style={{ fontWeight: '600' }}>₹{pricePerPage}</span>
+                <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '2px solid var(--border-editorial)', paddingBottom: '8px', fontWeight: '800' }}>
+                  <span style={{ color: 'var(--text-dark)' }}>Rate per page (Final)</span>
+                  <span style={{ fontWeight: '800' }}>₹{pricePerPage}</span>
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1.5px solid var(--border-light)', paddingBottom: '8px', paddingTop: '4px' }}>
                   <span style={{ color: 'var(--text-muted)' }}>Total Pages</span>
                   <span style={{ fontWeight: '600' }}>{pages}</span>
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid var(--border-light)', paddingTop: '10px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1.5px solid var(--border-light)', paddingBottom: '8px', paddingTop: '4px' }}>
                   <span style={{ color: 'var(--text-muted)' }}>Writer Compensation</span>
-                  <span style={{ fontWeight: '500', color: 'var(--accent-green)' }}>₹{writerPayout}</span>
+                  <span style={{ fontWeight: '600', color: 'var(--accent-green)' }}>₹{writerPayout}</span>
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: '4px' }}>
                   <span style={{ color: 'var(--text-muted)' }}>Platform Service Fee (15%)</span>
-                  <span style={{ fontWeight: '500' }}>₹{platformFee}</span>
+                  <span style={{ fontWeight: '600' }}>₹{platformFee}</span>
                 </div>
               </div>
 
