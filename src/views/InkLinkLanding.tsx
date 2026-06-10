@@ -287,7 +287,7 @@ export const InkLinkLanding: React.FC = () => {
       {/* 4. Stats Counters Section */}
       <section className="border-bottom" style={{ borderColor: 'var(--border-editorial)', backgroundColor: '#FAF9F6' }}>
         <div className="section-container" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)' }}>
-          <div style={{ padding: '32px 40px', borderRight: '1px solid var(--border-editorial)', textAlign: 'center' }}>
+          <div style={{ padding: '32px 40px', borderLeft: '1px solid var(--border-editorial)', borderRight: '1px solid var(--border-editorial)', textAlign: 'center' }}>
             <div style={{ fontSize: '40px', fontWeight: '900', color: 'var(--text-dark)', fontFamily: 'var(--font-display)' }}>15K+</div>
             <div style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: '700', textTransform: 'uppercase', marginTop: '4px' }}>Assignments Completed</div>
           </div>
@@ -299,7 +299,7 @@ export const InkLinkLanding: React.FC = () => {
             <div style={{ fontSize: '40px', fontWeight: '900', color: 'var(--text-dark)', fontFamily: 'var(--font-display)' }}>4.9★</div>
             <div style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: '700', textTransform: 'uppercase', marginTop: '4px' }}>Penmanship Satisfaction Rating</div>
           </div>
-          <div style={{ padding: '32px 40px', textAlign: 'center' }}>
+          <div style={{ padding: '32px 40px', borderRight: '1px solid var(--border-editorial)', textAlign: 'center' }}>
             <div style={{ fontSize: '40px', fontWeight: '900', color: 'var(--text-dark)', fontFamily: 'var(--font-display)' }}>24h</div>
             <div style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: '700', textTransform: 'uppercase', marginTop: '4px' }}>Fastest Rush Turnaround</div>
           </div>
