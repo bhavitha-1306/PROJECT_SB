@@ -54,7 +54,8 @@ export const ClientDashboard = ({ user, onLogout, onGoBack }) => {
     };
   });
 
-  // Post assignment form states
+  // Post assignment flow wizard states
+  const [checkoutStep, setCheckoutStep] = useState(1); // 1: Specs, 2: Choose Writer, 3: Payment
   const [title, setTitle] = useState('');
   const [subject, setSubject] = useState('Chemistry');
   const [pages, setPages] = useState(10);
@@ -67,8 +68,9 @@ export const ClientDashboard = ({ user, onLogout, onGoBack }) => {
   const [orderMarginSize, setOrderMarginSize] = useState(preferences.marginSize);
   const [orderDeliveryFormat, setOrderDeliveryFormat] = useState('digital'); // 'digital' | 'physical'
   const [uploadedPromptFile, setUploadedPromptFile] = useState(null);
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('upi'); // 'upi' | 'card' | 'wallet' | 'cod'
 
-  // Writers Directory search & Invite Modal
+  // Writers Directory search
   const [searchWriterQuery, setSearchWriterQuery] = useState('');
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
   const [inviteEmail, setInviteEmail] = useState('');
@@ -200,7 +202,7 @@ export const ClientDashboard = ({ user, onLogout, onGoBack }) => {
 
   const getBaseRate = () => {
     const selectedWriter = getSelectedWriterObj();
-    return selectedWriter ? selectedWriter.rate : 35; // standard pool rate is 35
+    return selectedWriter ? selectedWriter.rate : 25; // default rate matching wireframe ₹25/page
   };
 
   const getMultiplier = () => {
@@ -210,7 +212,7 @@ export const ClientDashboard = ({ user, onLogout, onGoBack }) => {
   };
 
   const getCourierFee = () => {
-    return orderDeliveryFormat === 'physical' ? 80 : 0;
+    return orderDeliveryFormat === 'physical' ? 40 : 0; // matching mockup delivery charge: ₹40
   };
 
   const pricePerPage = Math.round(getBaseRate() * getMultiplier());
@@ -220,15 +222,18 @@ export const ClientDashboard = ({ user, onLogout, onGoBack }) => {
   const handleSimulatedFileUpload = () => {
     setUploadedPromptFile('coursework_syllabus_unit4.pdf');
     // Extract random pages count between 8 and 25
-    const extractedPages = Math.floor(Math.random() * 18 + 8);
+    const extractedPages = Math.floor(Math.random() * 10 + 6);
     setPages(extractedPages);
-    alert(`File uploaded! InkLink Prompt AI analyzed unit4.pdf and auto-extracted requirements for ${extractedPages} handwritten pages.`);
+    alert(`File uploaded! InkLink Prompt AI analyzed coursework_syllabus_unit4.pdf and auto-extracted requirements for ${extractedPages} handwritten pages.`);
   };
 
   // Post Order Handler
   const handleCreateOrder = (e) => {
     e.preventDefault();
-    if (!title.trim()) return;
+    if (!title.trim()) {
+      alert('Please fill out the assignment title.');
+      return;
+    }
 
     const selectedWriter = getSelectedWriterObj();
     const orderId = `ord_${Math.floor(Math.random() * 90000 + 10000)}`;
@@ -250,7 +255,8 @@ export const ClientDashboard = ({ user, onLogout, onGoBack }) => {
       paperStyle: orderPaperStyle,
       marginSize: orderMarginSize,
       deliveryFormat: orderDeliveryFormat,
-      promptFile: uploadedPromptFile
+      promptFile: uploadedPromptFile,
+      paymentMethod: selectedPaymentMethod
     };
 
     // Save assignments
@@ -276,18 +282,20 @@ export const ClientDashboard = ({ user, onLogout, onGoBack }) => {
       ...prevAlerts
     ]));
 
-    // Reset Form
+    // Reset Form & Wizard
     setTitle('');
     setUploadedPromptFile(null);
     setTargetWriterId('pool');
     setOrderDeliveryFormat('digital');
+    setCheckoutStep(1);
     setActiveTab('assignments');
-    alert(`Order posted successfully! ₹${calculatedPrice} locked in escrow.`);
+    alert(`Order posted successfully! ₹${calculatedPrice} locked in escrow via simulated ${selectedPaymentMethod.toUpperCase()} payment.`);
   };
 
   // Hire Direct Link
   const handleHireDirectly = (writer) => {
     setTargetWriterId(writer.id);
+    setCheckoutStep(1); // Start at step 1 with the writer selected
     setActiveTab('post');
   };
 
@@ -330,7 +338,7 @@ export const ClientDashboard = ({ user, onLogout, onGoBack }) => {
       const writerReplies = [
         "Understood. I will use standard ruled formats and double-check heading styles.",
         "Got it! The sketches/diagrams are being drafted on sheet 4 carefully.",
-        "Sure, I will complete this before the 3-day deadline. Standard gel ink is ready.",
+        "Sure, I will complete this before the deadline. Standard gel ink is ready.",
         "No problem. I will maintain clean margins on both sides as per your preferences."
       ];
       const randomReply = writerReplies[Math.floor(Math.random() * writerReplies.length)];
@@ -535,7 +543,10 @@ export const ClientDashboard = ({ user, onLogout, onGoBack }) => {
               return (
                 <button
                   key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
+                  onClick={() => {
+                    setActiveTab(tab.id);
+                    if (tab.id === 'post') setCheckoutStep(1); // Reset wizard when opening post order
+                  }}
                   style={{
                     display: 'flex',
                     alignItems: 'center',
@@ -609,7 +620,7 @@ export const ClientDashboard = ({ user, onLogout, onGoBack }) => {
             <span style={{ fontSize: '11px', fontWeight: '800', textTransform: 'uppercase', color: 'var(--accent-orange)' }}>Client Space</span>
             <h1 style={{ fontSize: '28px', fontWeight: '900', margin: '2px 0 0 0', letterSpacing: '-0.02em' }}>
               {activeTab === 'assignments' && "Active Assignments"}
-              {activeTab === 'post' && "Post New Order"}
+              {activeTab === 'post' && `Post New Order ${checkoutStep ? `(Step ${checkoutStep}/3)` : ''}`}
               {activeTab === 'writers' && "Vetted Writers Registry"}
               {activeTab === 'chat' && "Inbox & Discussions"}
               {activeTab === 'ledger' && "Escrow Balance Ledger"}
@@ -666,7 +677,7 @@ export const ClientDashboard = ({ user, onLogout, onGoBack }) => {
                   <p style={{ color: 'var(--text-muted)', fontSize: '13px', marginBottom: '24px' }}>
                     No orders match the selected filter. Create a new prompt to alert our network of writers.
                   </p>
-                  <button onClick={() => setActiveTab('post')} className="btn-secondary" style={{ padding: '8px 20px', fontSize: '12px' }}>
+                  <button onClick={() => { setActiveTab('post'); setCheckoutStep(1); }} className="btn-secondary" style={{ padding: '8px 20px', fontSize: '12px' }}>
                     Create First Assignment Now
                   </button>
                 </div>
@@ -890,305 +901,609 @@ export const ClientDashboard = ({ user, onLogout, onGoBack }) => {
           </div>
         )}
 
-        {/* Tab 2: Post Assignment */}
+        {/* Tab 2: Post Assignment (3-Step Wizard) */}
         {activeTab === 'post' && (
           <div style={{ backgroundColor: '#FFFFFF', border: '2px solid var(--border-editorial)', padding: '32px', boxShadow: '6px 6px 0 var(--border-editorial)' }}>
-            <h2 className="font-display-condensed" style={{ fontSize: '22px', marginBottom: '24px', borderBottom: '1px solid var(--border-light)', paddingBottom: '12px' }}>
-              Post Assignment Specifications
-            </h2>
-
-            <form onSubmit={handleCreateOrder} style={{ display: 'grid', gridTemplateColumns: 'repeat(12, 1fr)', gap: '32px' }}>
-              
-              {/* Left Column Fields */}
-              <div style={{ gridColumn: 'span 7', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            
+            {/* 3-Step Wizard Progress Header */}
+            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', marginBottom: '32px', borderBottom: '1px solid var(--border-light)', paddingBottom: '24px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
                 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                  <label style={{ fontSize: '11px', fontWeight: '800', textTransform: 'uppercase' }}>Assignment Title *</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="e.g. Chemistry Homework - Organic Formulas"
-                    value={title}
-                    onChange={(e) => setTitle(e.target.value)}
-                    style={{ padding: '12px', border: '1.5px solid var(--border-editorial)', fontSize: '13px', outline: 'none', backgroundColor: 'var(--bg-sand)' }}
-                  />
+                {/* Step 1 indicator */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <div style={{
+                    width: '28px',
+                    height: '28px',
+                    borderRadius: '50%',
+                    backgroundColor: checkoutStep >= 1 ? 'var(--border-editorial)' : '#FFFFFF',
+                    color: checkoutStep >= 1 ? 'var(--bg-sand)' : 'var(--text-dark)',
+                    border: '2px solid var(--border-editorial)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontWeight: '800',
+                    fontSize: '13px'
+                  }}>
+                    {checkoutStep > 1 ? <Check size={14} /> : "1"}
+                  </div>
+                  <span style={{ fontSize: '11px', fontWeight: '800', textTransform: 'uppercase', color: checkoutStep >= 1 ? 'var(--text-dark)' : 'var(--text-muted)' }}>
+                    Upload Assignment
+                  </span>
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                    <label style={{ fontSize: '11px', fontWeight: '800', textTransform: 'uppercase' }}>Subject Domain</label>
-                    <select
-                      value={subject}
-                      onChange={(e) => setSubject(e.target.value)}
-                      style={{ padding: '12px', border: '1.5px solid var(--border-editorial)', fontSize: '13px', fontWeight: '700', outline: 'none', backgroundColor: '#FFFFFF' }}
-                    >
-                      <option value="Chemistry">Chemistry</option>
-                      <option value="English">English</option>
-                      <option value="Math">Math</option>
-                      <option value="History">History</option>
-                      <option value="Computer Science">Computer Science</option>
-                    </select>
-                  </div>
+                {/* Line */}
+                <div style={{ width: '40px', height: '2px', backgroundColor: checkoutStep >= 2 ? 'var(--border-editorial)' : 'var(--border-light)' }} />
 
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                    <label style={{ fontSize: '11px', fontWeight: '800', textTransform: 'uppercase' }}>Deadline Speed</label>
-                    <select
-                      value={deadline}
-                      onChange={(e) => setDeadline(e.target.value)}
-                      style={{ padding: '12px', border: '1.5px solid var(--border-editorial)', fontSize: '13px', fontWeight: '700', outline: 'none', backgroundColor: '#FFFFFF' }}
-                    >
-                      <option value="24 Hours">24 Hours (Rush +₹50)</option>
-                      <option value="48 Hours">48 Hours</option>
-                      <option value="3 Days">3 Days</option>
-                      <option value="5 Days">5 Days</option>
-                      <option value="7 Days">7 Days</option>
-                    </select>
+                {/* Step 2 indicator */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <div style={{
+                    width: '28px',
+                    height: '28px',
+                    borderRadius: '50%',
+                    backgroundColor: checkoutStep >= 2 ? 'var(--border-editorial)' : '#FFFFFF',
+                    color: checkoutStep >= 2 ? 'var(--bg-sand)' : 'var(--text-dark)',
+                    border: '2px solid var(--border-editorial)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontWeight: '800',
+                    fontSize: '13px'
+                  }}>
+                    {checkoutStep > 2 ? <Check size={14} /> : "2"}
                   </div>
+                  <span style={{ fontSize: '11px', fontWeight: '800', textTransform: 'uppercase', color: checkoutStep >= 2 ? 'var(--text-dark)' : 'var(--text-muted)' }}>
+                    Choose Writer
+                  </span>
                 </div>
 
-                {/* Simulated Requirement PDF drag zone */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                  <label style={{ fontSize: '11px', fontWeight: '800', textTransform: 'uppercase' }}>Syllabus / Prompt Document (Optional)</label>
-                  <div 
-                    onClick={handleSimulatedFileUpload}
+                {/* Line */}
+                <div style={{ width: '40px', height: '2px', backgroundColor: checkoutStep >= 3 ? 'var(--border-editorial)' : 'var(--border-light)' }} />
+
+                {/* Step 3 indicator */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <div style={{
+                    width: '28px',
+                    height: '28px',
+                    borderRadius: '50%',
+                    backgroundColor: checkoutStep >= 3 ? 'var(--border-editorial)' : '#FFFFFF',
+                    color: checkoutStep >= 3 ? 'var(--bg-sand)' : 'var(--text-dark)',
+                    border: '2px solid var(--border-editorial)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontWeight: '800',
+                    fontSize: '13px'
+                  }}>
+                    3
+                  </div>
+                  <span style={{ fontSize: '11px', fontWeight: '800', textTransform: 'uppercase', color: checkoutStep >= 3 ? 'var(--text-dark)' : 'var(--text-muted)' }}>
+                    Payment Summary
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* WIZARD STEP 1: Upload assignment specs */}
+            {checkoutStep === 1 && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                <h3 style={{ fontSize: '15px', fontWeight: '900', borderBottom: '1px solid var(--border-light)', paddingBottom: '10px' }}>
+                  Step 1: Define Assignment Details
+                </h3>
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(12, 1fr)', gap: '32px' }}>
+                  
+                  {/* Left Specs */}
+                  <div style={{ gridColumn: 'span 7', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                      <label style={{ fontSize: '11px', fontWeight: '800', textTransform: 'uppercase' }}>Assignment Title *</label>
+                      <input
+                        type="text"
+                        placeholder="e.g. History Essay on French Revolution"
+                        value={title}
+                        onChange={(e) => setTitle(e.target.value)}
+                        style={{ padding: '12px', border: '1.5px solid var(--border-editorial)', fontSize: '13px', outline: 'none', backgroundColor: 'var(--bg-sand)' }}
+                      />
+                    </div>
+
+                    {/* Drag and drop mock file upload */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                      <label style={{ fontSize: '11px', fontWeight: '800', textTransform: 'uppercase' }}>Upload Prompt Files</label>
+                      <div 
+                        onClick={handleSimulatedFileUpload}
+                        style={{
+                          border: '2.5px dashed var(--border-editorial)',
+                          backgroundColor: 'var(--bg-sand)',
+                          padding: '32px 24px',
+                          textAlign: 'center',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '12px',
+                          transition: 'var(--transition-smooth)'
+                        }}
+                        onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#EBE9E2'}
+                        onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'var(--bg-sand)'}
+                      >
+                        <Upload size={28} style={{ color: 'var(--text-muted)' }} />
+                        <div>
+                          <strong style={{ fontSize: '13px', display: 'block', marginBottom: '4px' }}>
+                            {uploadedPromptFile ? `Uploaded: ${uploadedPromptFile}` : "Drag & drop files here or click to upload"}
+                          </strong>
+                          <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>PDF, Image, Word (Max 50MB)</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                        <label style={{ fontSize: '11px', fontWeight: '800', textTransform: 'uppercase' }}>Subject</label>
+                        <select
+                          value={subject}
+                          onChange={(e) => setSubject(e.target.value)}
+                          style={{ padding: '12px', border: '1.5px solid var(--border-editorial)', fontSize: '13px', fontWeight: '700', outline: 'none', backgroundColor: '#FFFFFF' }}
+                        >
+                          <option value="Chemistry">Chemistry</option>
+                          <option value="English">English</option>
+                          <option value="Math">Math</option>
+                          <option value="History">History</option>
+                          <option value="Computer Science">Computer Science</option>
+                        </select>
+                      </div>
+
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                        <label style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', fontWeight: '800', textTransform: 'uppercase' }}>
+                          <span>No. of Pages</span>
+                          <span style={{ color: 'var(--accent-orange)' }}>{pages} pages</span>
+                        </label>
+                        <input
+                          type="number"
+                          min="1"
+                          max="100"
+                          value={pages}
+                          onChange={(e) => setPages(Math.max(1, parseInt(e.target.value) || 1))}
+                          style={{ padding: '10px 12px', border: '1.5px solid var(--border-editorial)', fontSize: '13px', outline: 'none', backgroundColor: '#FFFFFF' }}
+                        />
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                        <label style={{ fontSize: '11px', fontWeight: '800', textTransform: 'uppercase' }}>Deadline</label>
+                        <select
+                          value={deadline}
+                          onChange={(e) => setDeadline(e.target.value)}
+                          style={{ padding: '12px', border: '1.5px solid var(--border-editorial)', fontSize: '13px', fontWeight: '700', outline: 'none', backgroundColor: '#FFFFFF' }}
+                        >
+                          <option value="24 Hours">24 Hours (Rush +₹50)</option>
+                          <option value="48 Hours">48 Hours</option>
+                          <option value="3 Days">3 Days</option>
+                          <option value="5 Days">5 Days</option>
+                          <option value="7 Days">7 Days</option>
+                        </select>
+                      </div>
+
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                        <label style={{ fontSize: '11px', fontWeight: '800', textTransform: 'uppercase' }}>Complexity Grade</label>
+                        <select
+                          value={complexity}
+                          onChange={(e) => setComplexity(e.target.value)}
+                          style={{ padding: '12px', border: '1.5px solid var(--border-editorial)', fontSize: '13px', fontWeight: '700', outline: 'none', backgroundColor: '#FFFFFF' }}
+                        >
+                          <option value="text">Text and Essays</option>
+                          <option value="technical">Math / Equations (+30%)</option>
+                          <option value="diagrams">Diagrams / Drawings (+50%)</option>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Right Styling Rules */}
+                  <div style={{ gridColumn: 'span 5', display: 'flex', flexDirection: 'column', gap: '20px', borderLeft: '1px solid var(--border-light)', paddingLeft: '32px' }}>
+                    <h4 style={{ fontSize: '12px', fontWeight: '800', textTransform: 'uppercase', color: 'var(--text-muted)', marginBottom: '4px' }}>
+                      Handwriting Rules & Ink
+                    </h4>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                      <label style={{ fontSize: '10px', fontWeight: '800', color: 'var(--text-muted)' }}>INK COLOR</label>
+                      <select
+                        value={orderInkColor}
+                        onChange={(e) => setOrderInkColor(e.target.value)}
+                        style={{ padding: '10px', border: '1.5px solid var(--border-editorial)', fontSize: '12px' }}
+                      >
+                        <option value="Blue">Blue Ink</option>
+                        <option value="Black">Black Ink</option>
+                        <option value="Green">Green Ink</option>
+                        <option value="Red">Red Ink</option>
+                      </select>
+                    </div>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                      <label style={{ fontSize: '10px', fontWeight: '800', color: 'var(--text-muted)' }}>PEN TYPE</label>
+                      <select
+                        value={orderPenType}
+                        onChange={(e) => setOrderPenType(e.target.value)}
+                        style={{ padding: '10px', border: '1.5px solid var(--border-editorial)', fontSize: '12px' }}
+                      >
+                        <option value="Gel">Gel Pen</option>
+                        <option value="Ballpoint">Ballpoint Pen</option>
+                        <option value="Fountain">Fountain Pen</option>
+                      </select>
+                    </div>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                      <label style={{ fontSize: '10px', fontWeight: '800', color: 'var(--text-muted)' }}>PAPER STYLE</label>
+                      <select
+                        value={orderPaperStyle}
+                        onChange={(e) => setOrderPaperStyle(e.target.value)}
+                        style={{ padding: '10px', border: '1.5px solid var(--border-editorial)', fontSize: '12px' }}
+                      >
+                        <option value="Ruled">Ruled Notebook Paper</option>
+                        <option value="Plain">Plain White Sheet</option>
+                        <option value="Graph">Graph Paper</option>
+                      </select>
+                    </div>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                      <label style={{ fontSize: '10px', fontWeight: '800', color: 'var(--text-muted)' }}>MARGIN SIZE</label>
+                      <select
+                        value={orderMarginSize}
+                        onChange={(e) => setOrderMarginSize(e.target.value)}
+                        style={{ padding: '10px', border: '1.5px solid var(--border-editorial)', fontSize: '12px' }}
+                      >
+                        <option value="Standard (1 inch)">Standard (1 inch)</option>
+                        <option value="Narrow (0.5 inch)">Narrow (0.5 inch)</option>
+                        <option value="None">No Margins</option>
+                      </select>
+                    </div>
+                  </div>
+
+                </div>
+
+                <div style={{ display: 'flex', justifyContent: 'flex-end', borderTop: '1px solid var(--border-light)', paddingTop: '20px', marginTop: '12px' }}>
+                  <button
+                    onClick={() => {
+                      if (!title.trim()) {
+                        alert('Please enter an assignment title to proceed.');
+                        return;
+                      }
+                      setCheckoutStep(2);
+                    }}
                     style={{
-                      border: '2px dashed var(--border-editorial)',
-                      backgroundColor: 'var(--bg-sand)',
-                      padding: '20px',
-                      textAlign: 'center',
+                      backgroundColor: 'var(--border-editorial)',
+                      color: 'var(--bg-sand)',
+                      padding: '12px 28px',
+                      fontSize: '13px',
+                      fontWeight: '800',
+                      textTransform: 'uppercase',
+                      border: '1.5px solid var(--border-editorial)',
+                      boxShadow: '3px 3px 0 var(--accent-orange)',
                       cursor: 'pointer',
                       display: 'flex',
-                      flexDirection: 'column',
                       alignItems: 'center',
-                      gap: '8px',
-                      transition: 'background-color 0.2s'
+                      gap: '8px'
                     }}
-                    onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#EBE9E2'}
-                    onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'var(--bg-sand)'}
                   >
-                    <Upload size={20} style={{ color: 'var(--text-muted)' }} />
-                    <span style={{ fontSize: '12px', fontWeight: '700' }}>
-                      {uploadedPromptFile ? `Uploaded: ${uploadedPromptFile}` : "Upload Brief PDF to auto-extract pages count"}
-                    </span>
-                    <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>Auto page detection sandbox</span>
-                  </div>
+                    Next: Choose Writer <ChevronRight size={14} />
+                  </button>
                 </div>
+              </div>
+            )}
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                    <label style={{ fontSize: '11px', fontWeight: '800', textTransform: 'uppercase' }}>Complexity Grade</label>
-                    <select
-                      value={complexity}
-                      onChange={(e) => setComplexity(e.target.value)}
-                      style={{ padding: '12px', border: '1.5px solid var(--border-editorial)', fontSize: '13px', fontWeight: '700', outline: 'none', backgroundColor: '#FFFFFF' }}
-                    >
-                      <option value="text">Text and Essays</option>
-                      <option value="technical">Math / Equations (+30%)</option>
-                      <option value="diagrams">Diagrams / Drawings (+50%)</option>
-                    </select>
-                  </div>
-
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                    <label style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', fontWeight: '800', textTransform: 'uppercase' }}>
-                      <span>Pages Count</span>
-                      <span style={{ color: 'var(--accent-orange)' }}>{pages} pages</span>
-                    </label>
+            {/* WIZARD STEP 2: Choose Writer */}
+            {checkoutStep === 2 && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-light)', paddingBottom: '10px' }}>
+                  <h3 style={{ fontSize: '15px', fontWeight: '900', margin: 0 }}>
+                    Step 2: Assign Writer for Handwriting Style
+                  </h3>
+                  
+                  {/* Sub search inside wizard */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', border: '1px solid var(--border-editorial)', padding: '4px 12px', width: '280px', backgroundColor: 'var(--bg-sand)' }}>
+                    <Search size={14} style={{ color: 'var(--text-muted)' }} />
                     <input
-                      type="range"
-                      min="1"
-                      max="50"
-                      value={pages}
-                      onChange={(e) => setPages(parseInt(e.target.value))}
-                      style={{ accentColor: 'var(--accent-orange)', cursor: 'pointer', marginTop: '14px' }}
+                      type="text"
+                      placeholder="Search writer name..."
+                      value={searchWriterQuery}
+                      onChange={(e) => setSearchWriterQuery(e.target.value)}
+                      style={{ fontSize: '11px', outline: 'none', width: '100%' }}
                     />
                   </div>
                 </div>
 
-                {/* Direct writer hiring info */}
-                <div style={{ backgroundColor: 'rgba(16, 67, 202, 0.05)', border: '1px solid rgba(16, 67, 202, 0.2)', padding: '16px', display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <Info size={20} color="var(--accent-ink)" style={{ flexShrink: 0 }} />
-                  <p style={{ fontSize: '12px', color: 'var(--accent-ink)', lineHeight: '1.4' }}>
-                    {targetWriterId === 'pool' ? (
-                      "Your assignment will be posted to the public Writers Pool. Vetted writers can review and claim it."
-                    ) : (
-                      <span>
-                        Direct Hire Selected: <strong>{writersList.find(w => w.id === targetWriterId)?.name}</strong>. The order will be immediately assigned to their active workbench.
-                      </span>
-                    )}
-                  </p>
-                </div>
-
-              </div>
-
-              {/* Right Column Fields (Styling Preferences & Pricing) */}
-              <div style={{ gridColumn: 'span 5', display: 'flex', flexDirection: 'column', gap: '20px', borderLeft: '1px solid var(--border-light)', paddingLeft: '32px' }}>
-                
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                  <label style={{ fontSize: '11px', fontWeight: '800', textTransform: 'uppercase' }}>Target Vetted Writer</label>
-                  <select
-                    value={targetWriterId}
-                    onChange={(e) => setTargetWriterId(e.target.value)}
-                    style={{ padding: '10px', border: '1.5px solid var(--border-editorial)', fontSize: '12px', fontWeight: '700', outline: 'none' }}
-                  >
-                    <option value="pool">Public Writer Pool (Lowest Rate)</option>
-                    {writersList.map(w => (
-                      <option key={w.id} value={w.id}>
-                        {w.name} ({w.style} · ₹{w.rate}/page)
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* Delivery format radio buttons */}
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                  <label style={{ fontSize: '11px', fontWeight: '800', textTransform: 'uppercase' }}>Delivery Format</label>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                    <button
-                      type="button"
-                      onClick={() => setOrderDeliveryFormat('digital')}
-                      style={{
-                        padding: '10px',
-                        border: '1.5px solid var(--border-editorial)',
-                        backgroundColor: orderDeliveryFormat === 'digital' ? 'var(--border-editorial)' : '#FFFFFF',
-                        color: orderDeliveryFormat === 'digital' ? 'var(--bg-sand)' : 'var(--text-dark)',
-                        fontSize: '12px',
-                        fontWeight: '800',
-                        textTransform: 'uppercase',
-                        boxShadow: orderDeliveryFormat === 'digital' ? 'none' : '2px 2px 0 var(--border-editorial)',
-                        transform: orderDeliveryFormat === 'digital' ? 'translate(1px, 1px)' : 'none'
-                      }}
-                    >
-                      Digital PDF Scan
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setOrderDeliveryFormat('physical')}
-                      style={{
-                        padding: '10px',
-                        border: '1.5px solid var(--border-editorial)',
-                        backgroundColor: orderDeliveryFormat === 'physical' ? 'var(--border-editorial)' : '#FFFFFF',
-                        color: orderDeliveryFormat === 'physical' ? 'var(--bg-sand)' : 'var(--text-dark)',
-                        fontSize: '12px',
-                        fontWeight: '800',
-                        textTransform: 'uppercase',
-                        boxShadow: orderDeliveryFormat === 'physical' ? 'none' : '2px 2px 0 var(--border-editorial)',
-                        transform: orderDeliveryFormat === 'physical' ? 'translate(1px, 1px)' : 'none'
-                      }}
-                    >
-                      Physical Courier (+₹80)
-                    </button>
-                  </div>
-                </div>
-
-                {/* Styling preferences (override client defaults) */}
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                    <label style={{ fontSize: '10px', fontWeight: '800', color: 'var(--text-muted)' }}>INK COLOR</label>
-                    <select
-                      value={orderInkColor}
-                      onChange={(e) => setOrderInkColor(e.target.value)}
-                      style={{ padding: '8px', border: '1px solid var(--border-editorial)', fontSize: '12px' }}
-                    >
-                      <option value="Blue">Blue Ink</option>
-                      <option value="Black">Black Ink</option>
-                      <option value="Green">Green Ink</option>
-                      <option value="Red">Red Ink</option>
-                    </select>
-                  </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                    <label style={{ fontSize: '10px', fontWeight: '800', color: 'var(--text-muted)' }}>PEN TYPE</label>
-                    <select
-                      value={orderPenType}
-                      onChange={(e) => setOrderPenType(e.target.value)}
-                      style={{ padding: '8px', border: '1px solid var(--border-editorial)', fontSize: '12px' }}
-                    >
-                      <option value="Gel">Gel Pen</option>
-                      <option value="Ballpoint">Ballpoint Pen</option>
-                      <option value="Fountain">Fountain Pen</option>
-                    </select>
-                  </div>
-                </div>
-
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                    <label style={{ fontSize: '10px', fontWeight: '800', color: 'var(--text-muted)' }}>PAPER STYLE</label>
-                    <select
-                      value={orderPaperStyle}
-                      onChange={(e) => setOrderPaperStyle(e.target.value)}
-                      style={{ padding: '8px', border: '1px solid var(--border-editorial)', fontSize: '12px' }}
-                    >
-                      <option value="Ruled">Ruled Notebook</option>
-                      <option value="Plain">Plain White Sheet</option>
-                      <option value="Graph">Graph Paper</option>
-                    </select>
-                  </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                    <label style={{ fontSize: '10px', fontWeight: '800', color: 'var(--text-muted)' }}>MARGIN SIZE</label>
-                    <select
-                      value={orderMarginSize}
-                      onChange={(e) => setOrderMarginSize(e.target.value)}
-                      style={{ padding: '8px', border: '1px solid var(--border-editorial)', fontSize: '12px' }}
-                    >
-                      <option value="Standard (1 inch)">Standard (1 inch)</option>
-                      <option value="Narrow (0.5 inch)">Narrow (0.5 inch)</option>
-                      <option value="None">No Margins</option>
-                    </select>
-                  </div>
-                </div>
-
-                {/* Estimate Receipt block */}
-                <div style={{ backgroundColor: 'var(--bg-sand)', padding: '20px', border: '1.5px solid var(--border-editorial)', marginTop: '12px' }}>
-                  <div style={{ fontSize: '10px', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: '800', marginBottom: '8px' }}>Escrow Cost Summary</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', maxHeight: '400px', overflowY: 'auto', paddingRight: '8px' }}>
                   
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '12px', borderBottom: '1px solid var(--border-light)', paddingBottom: '12px', marginBottom: '12px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <span>Base Page Rate ({targetWriterId === 'pool' ? "Pool Vetted" : "Direct Hire"}):</span>
-                      <span>₹{getBaseRate()} / page</span>
+                  {/* Public pool selector option */}
+                  <div
+                    onClick={() => setTargetWriterId('pool')}
+                    style={{
+                      border: '2px solid var(--border-editorial)',
+                      padding: '16px 20px',
+                      backgroundColor: targetWriterId === 'pool' ? 'rgba(255, 85, 0, 0.04)' : '#FFFFFF',
+                      boxShadow: targetWriterId === 'pool' ? 'none' : '3px 3px 0 var(--border-editorial)',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      transform: targetWriterId === 'pool' ? 'translate(1px, 1px)' : 'none',
+                      transition: 'all 0.15s ease'
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                      <div style={{ width: '36px', height: '36px', borderRadius: '50%', backgroundColor: 'var(--border-editorial)', color: '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <Users size={16} />
+                      </div>
+                      <div>
+                        <strong style={{ fontSize: '14px', display: 'block' }}>Public Writer Pool</strong>
+                        <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Broadcast assignment to all whitelisted writers on the job board</span>
+                      </div>
                     </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <span>Complexity Multiplier:</span>
-                      <span>x{getMultiplier()}</span>
+                    <div style={{ textAlign: 'right', display: 'flex', alignItems: 'center', gap: '16px' }}>
+                      <div>
+                        <span style={{ fontSize: '10px', color: 'var(--text-muted)', textTransform: 'uppercase', display: 'block' }}>Base Rate</span>
+                        <strong style={{ fontSize: '16px', color: 'var(--accent-green)' }}>₹25/page</strong>
+                      </div>
+                      <div style={{
+                        width: '20px',
+                        height: '20px',
+                        borderRadius: '50%',
+                        border: '2px solid var(--border-editorial)',
+                        backgroundColor: targetWriterId === 'pool' ? 'var(--border-editorial)' : 'transparent',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                      }}>
+                        {targetWriterId === 'pool' && <Check size={12} color="#FFFFFF" />}
+                      </div>
                     </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <span>Pages Count:</span>
-                      <span>{pages} sheets</span>
+                  </div>
+
+                  {/* Vetted writers list */}
+                  {writersList
+                    .filter(w => w.name.toLowerCase().includes(searchWriterQuery.toLowerCase()))
+                    .map(writer => {
+                      const isSelected = targetWriterId === writer.id;
+                      return (
+                        <div
+                          key={writer.id}
+                          onClick={() => setTargetWriterId(writer.id)}
+                          style={{
+                            border: '2px solid var(--border-editorial)',
+                            padding: '16px 20px',
+                            backgroundColor: isSelected ? 'rgba(16, 67, 202, 0.04)' : '#FFFFFF',
+                            boxShadow: isSelected ? 'none' : '3px 3px 0 var(--border-editorial)',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            transform: isSelected ? 'translate(1px, 1px)' : 'none',
+                            transition: 'all 0.15s ease'
+                          }}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                            <img src={writer.avatar} alt={writer.name} style={{ width: '36px', height: '36px', borderRadius: '50%', border: '1px solid var(--border-editorial)', objectFit: 'cover' }} />
+                            <div>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <strong style={{ fontSize: '14px' }}>{writer.name}</strong>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '2px', fontSize: '10px', color: 'var(--text-muted)' }}>
+                                  <Star size={10} color="var(--accent-orange)" fill="var(--accent-orange)" />
+                                  {writer.rating} ({writer.completed})
+                                </div>
+                              </div>
+                              <span style={{ fontSize: '11px', color: 'var(--accent-ink)', fontWeight: '700' }}>Style: {writer.style}</span>
+                            </div>
+                          </div>
+                          <div style={{ textAlign: 'right', display: 'flex', alignItems: 'center', gap: '16px' }}>
+                            <div>
+                              <span style={{ fontSize: '10px', color: 'var(--text-muted)', textTransform: 'uppercase', display: 'block' }}>Rate / Page</span>
+                              <strong style={{ fontSize: '16px', color: 'var(--accent-green)' }}>₹{writer.rate}/page</strong>
+                            </div>
+                            <div style={{
+                              width: '20px',
+                              height: '20px',
+                              borderRadius: '50%',
+                              border: '2px solid var(--border-editorial)',
+                              backgroundColor: isSelected ? 'var(--border-editorial)' : 'transparent',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center'
+                            }}>
+                              {isSelected && <Check size={12} color="#FFFFFF" />}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+
+                </div>
+
+                {/* Navigation row */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid var(--border-light)', paddingTop: '20px', marginTop: '12px' }}>
+                  <button
+                    onClick={() => setCheckoutStep(1)}
+                    className="btn-secondary"
+                    style={{ padding: '10px 24px', fontSize: '12px', textTransform: 'uppercase', borderRadius: '0' }}
+                  >
+                    Back to specs
+                  </button>
+                  
+                  <button
+                    onClick={() => setCheckoutStep(3)}
+                    style={{
+                      backgroundColor: 'var(--border-editorial)',
+                      color: 'var(--bg-sand)',
+                      padding: '12px 28px',
+                      fontSize: '13px',
+                      fontWeight: '800',
+                      textTransform: 'uppercase',
+                      border: '1.5px solid var(--border-editorial)',
+                      boxShadow: '3px 3px 0 var(--accent-orange)',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px'
+                    }}
+                  >
+                    Continue to Payment <ChevronRight size={14} />
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* WIZARD STEP 3: Payment & Summary */}
+            {checkoutStep === 3 && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                <h3 style={{ fontSize: '15px', fontWeight: '900', borderBottom: '1px solid var(--border-light)', paddingBottom: '10px' }}>
+                  Step 3: Review Invoice Summary & Lock Escrow
+                </h3>
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(12, 1fr)', gap: '32px' }}>
+                  
+                  {/* Left Summary Block (Matches Mockup visually) */}
+                  <div style={{ gridColumn: 'span 6', backgroundColor: 'var(--bg-sand)', border: '2px solid var(--border-editorial)', padding: '24px', boxShadow: '4px 4px 0 var(--border-editorial)' }}>
+                    <span style={{ fontSize: '11px', fontWeight: '800', textTransform: 'uppercase', color: 'var(--text-muted)', display: 'block', marginBottom: '16px' }}>
+                      Order Summary Invoice
+                    </span>
+                    
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', fontSize: '13px' }}>
+                      
+                      <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid var(--border-light)', paddingBottom: '8px' }}>
+                        <span style={{ color: 'var(--text-muted)' }}>Assignment Title:</span>
+                        <strong style={{ maxWidth: '240px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{title}</strong>
+                      </div>
+
+                      <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid var(--border-light)', paddingBottom: '8px' }}>
+                        <span style={{ color: 'var(--text-muted)' }}>Assigned Writer:</span>
+                        <strong>{targetWriterId === 'pool' ? "Public Pool" : writersList.find(w => w.id === targetWriterId)?.name}</strong>
+                      </div>
+
+                      <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid var(--border-light)', paddingBottom: '8px' }}>
+                        <span style={{ color: 'var(--text-muted)' }}>Total Pages count:</span>
+                        <strong>{pages} pages</strong>
+                      </div>
+
+                      <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid var(--border-light)', paddingBottom: '8px' }}>
+                        <span style={{ color: 'var(--text-muted)' }}>Price per page:</span>
+                        <strong>₹{getBaseRate()} / page</strong>
+                      </div>
+
+                      {/* Delivery Format dropdown selector in Payment block */}
+                      <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid var(--border-light)', paddingBottom: '8px', alignItems: 'center' }}>
+                        <span style={{ color: 'var(--text-muted)' }}>Delivery Format:</span>
+                        <select
+                          value={orderDeliveryFormat}
+                          onChange={(e) => setOrderDeliveryFormat(e.target.value)}
+                          style={{ padding: '4px 8px', border: '1px solid var(--border-editorial)', fontSize: '12px', backgroundColor: '#FFFFFF', fontWeight: '700' }}
+                        >
+                          <option value="digital">Digital PDF Scan (₹0)</option>
+                          <option value="physical">Physical Courier (+₹40)</option>
+                        </select>
+                      </div>
+
+                      <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid var(--border-light)', paddingBottom: '8px' }}>
+                        <span style={{ color: 'var(--text-muted)' }}>Delivery Courier Charge:</span>
+                        <strong>₹{getCourierFee()}</strong>
+                      </div>
+
+                      <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: '8px', fontSize: '16px', color: 'var(--text-dark)' }}>
+                        <strong>Total Amount:</strong>
+                        <strong style={{ fontSize: '18px', color: 'var(--accent-orange)' }}>₹{calculatedPrice}</strong>
+                      </div>
+
                     </div>
+                  </div>
+
+                  {/* Right Payment Methods (Matches Mockup payment list) */}
+                  <div style={{ gridColumn: 'span 6', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                    <span style={{ fontSize: '11px', fontWeight: '800', textTransform: 'uppercase', color: 'var(--text-muted)', display: 'block' }}>
+                      Select Payment Method
+                    </span>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                      {[
+                        { id: 'upi', label: 'UPI / QR Code' },
+                        { id: 'card', label: 'Credit / Debit Card' },
+                        { id: 'wallet', label: 'Escrow Wallet Balance' },
+                        { id: 'cod', label: 'Cash on Delivery' }
+                      ].map(method => (
+                        <div
+                          key={method.id}
+                          onClick={() => setSelectedPaymentMethod(method.id)}
+                          style={{
+                            border: '1.5px solid var(--border-editorial)',
+                            padding: '12px 16px',
+                            backgroundColor: selectedPaymentMethod === method.id ? '#FFFFFF' : 'var(--bg-sand)',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '12px'
+                          }}
+                        >
+                          <div style={{
+                            width: '16px',
+                            height: '16px',
+                            borderRadius: '50%',
+                            border: '2px solid var(--border-editorial)',
+                            backgroundColor: selectedPaymentMethod === method.id ? 'var(--border-editorial)' : 'transparent',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center'
+                          }}>
+                            {selectedPaymentMethod === method.id && <div style={{ width: '6px', height: '6px', borderRadius: '50%', backgroundColor: '#FFFFFF' }} />}
+                          </div>
+                          <span style={{ fontSize: '13px', fontWeight: '700' }}>{method.label}</span>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Shipping Address (if courier selected) */}
                     {orderDeliveryFormat === 'physical' && (
-                      <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--accent-orange)' }}>
-                        <span>Physical Courier Charge:</span>
-                        <span>+₹80</span>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginTop: '8px' }}>
+                        <label style={{ fontSize: '10px', fontWeight: '800', color: 'var(--text-muted)' }}>COURIER SHIPPING ADDRESS</label>
+                        <textarea
+                          rows="2"
+                          value={profile.address}
+                          onChange={(e) => setProfile(prev => ({ ...prev, address: e.target.value }))}
+                          style={{ padding: '8px', border: '1.5px solid var(--border-editorial)', fontSize: '12px', outline: 'none', backgroundColor: '#FFFFFF', resize: 'none' }}
+                          placeholder="Confirm doorstep shipping address..."
+                        />
                       </div>
                     )}
                   </div>
 
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div>
-                      <span style={{ fontSize: '10px', color: 'var(--text-muted)', textTransform: 'uppercase' }}>Locked Escrow Quote</span>
-                      <div style={{ fontSize: '22px', fontWeight: '900', color: 'var(--text-dark)' }}>₹{calculatedPrice}</div>
-                    </div>
-                    
-                    <button
-                      type="submit"
-                      style={{
-                        backgroundColor: 'var(--accent-orange)',
-                        color: '#FFFFFF',
-                        padding: '10px 20px',
-                        fontSize: '12px',
-                        fontWeight: '800',
-                        textTransform: 'uppercase',
-                        border: '1.5px solid var(--border-editorial)',
-                        boxShadow: '3px 3px 0 var(--border-editorial)',
-                        cursor: 'pointer'
-                      }}
-                    >
-                      Confirm & Lock Escrow ↗
-                    </button>
-                  </div>
                 </div>
 
+                {/* Navigation row */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid var(--border-light)', paddingTop: '20px', marginTop: '12px' }}>
+                  <button
+                    onClick={() => setCheckoutStep(2)}
+                    className="btn-secondary"
+                    style={{ padding: '10px 24px', fontSize: '12px', textTransform: 'uppercase', borderRadius: '0' }}
+                  >
+                    Back to writers
+                  </button>
+                  
+                  <button
+                    onClick={handleCreateOrder}
+                    style={{
+                      backgroundColor: 'var(--accent-ink)',
+                      color: '#FFFFFF',
+                      padding: '14px 40px',
+                      fontSize: '14px',
+                      fontWeight: '900',
+                      textTransform: 'uppercase',
+                      border: '1.5px solid var(--border-editorial)',
+                      boxShadow: '4px 4px 0 var(--border-editorial)',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    Pay ₹{calculatedPrice} ➔
+                  </button>
+                </div>
               </div>
+            )}
 
-            </form>
           </div>
         )}
 
@@ -1254,7 +1569,7 @@ export const ClientDashboard = ({ user, onLogout, onGoBack }) => {
                     {/* Upper row: avatar, name, rating, rate */}
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                       <div style={{ display: 'flex', gap: '14px', alignItems: 'center' }}>
-                        <img src={writer.avatar} alt={writer.name} style={{ width: '50px', height: '50px', borderRadius: '50%', border: '1.5px solid var(--border-editorial)', objectFit: 'cover' }} />
+                        <img src={writer.avatar} alt={writer.name} style={{ width: '50px', height: '50px', borderRadius: '50%', border: '1px solid var(--border-editorial)', objectFit: 'cover' }} />
                         <div>
                           <h4 style={{ fontSize: '16px', fontWeight: '800', margin: 0 }}>{writer.name}</h4>
                           <span style={{ fontSize: '11px', color: 'var(--accent-ink)', fontWeight: '700' }}>{writer.style}</span>
@@ -1853,7 +2168,7 @@ export const ClientDashboard = ({ user, onLogout, onGoBack }) => {
                   Live Delivery Route
                 </span>
                 
-                <div style={{ display: 'flex', justifycontent: 'space-between', alignItems: 'center', position: 'relative', padding: '10px 0' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', position: 'relative', padding: '10px 0' }}>
                   {/* Background line */}
                   <div style={{ position: 'absolute', top: '50%', left: 0, width: '100%', height: '3px', backgroundColor: 'var(--border-light)', transform: 'translateY(-50%)', zIndex: 1 }} />
                   
