@@ -1,9 +1,7 @@
 import React, { useState } from 'react';
 
-type FlowRole = 'client' | 'writer' | 'admin';
-
-export const WorkflowShowcase: React.FC = () => {
-  const [activeRole, setActiveRole] = useState<FlowRole>('client');
+export const WorkflowShowcase = () => {
+  const [activeRole, setActiveRole] = useState('client');
 
   const getWorkflowSteps = () => {
     switch (activeRole) {
@@ -30,6 +28,8 @@ export const WorkflowShowcase: React.FC = () => {
           { num: '03', title: 'Resolve Complaints', desc: 'Manage writer-client dispute tickets, verify guidelines adherence, and ensure 100% satisfaction guarantee.' },
           { num: '04', title: 'Platform Analytics', desc: 'Track daily page volume, active assignments count, commission logs, and payout schedules.' },
         ];
+      default:
+        return [];
     }
   };
 
@@ -38,6 +38,7 @@ export const WorkflowShowcase: React.FC = () => {
       case 'client': return 'Client Panel: "Upload Assignment"';
       case 'writer': return 'Writer Dashboard: "Job Board"';
       case 'admin': return 'Admin Panel: "Writer Verification"';
+      default: return '';
     }
   };
 
@@ -56,7 +57,7 @@ export const WorkflowShowcase: React.FC = () => {
           </div>
           <div style={{ gridColumn: 'span 4', display: 'flex', alignItems: 'flex-end', justifyContent: 'flex-end' }}>
             <div style={{ display: 'flex', gap: '8px', border: '1.5px solid var(--border-editorial)', padding: '4px', backgroundColor: '#FFFFFF' }}>
-              {(['client', 'writer', 'admin'] as FlowRole[]).map((role) => (
+              {['client', 'writer', 'admin'].map((role) => (
                 <button
                   key={role}
                   onClick={() => setActiveRole(role)}
@@ -203,8 +204,8 @@ export const WorkflowShowcase: React.FC = () => {
                       {/* Job 1 */}
                       <div style={{ backgroundColor: '#FFFFFF', padding: '12px', border: '1px solid var(--border-editorial)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <div>
-                          <div style={{ fontWeight: '800', fontSize: '12px' }}>World History Lecture Notes</div>
-                          <div style={{ fontSize: '10px', color: 'var(--text-muted)' }}>History | 14 Pages | Deadline: 2 Days</div>
+                           <div style={{ fontWeight: '800', fontSize: '12px' }}>World History Lecture Notes</div>
+                           <div style={{ fontSize: '10px', color: 'var(--text-muted)' }}>History | 14 Pages | Deadline: 2 Days</div>
                         </div>
                         <div style={{ textAlign: 'right' }}>
                           <div style={{ fontWeight: '900', color: 'var(--accent-green)', fontSize: '14px' }}>₹490</div>
@@ -251,7 +252,7 @@ export const WorkflowShowcase: React.FC = () => {
                           <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>Applied 2h ago</span>
                         </div>
                         <p style={{ fontSize: '11px', color: 'var(--text-muted)', marginBottom: '10px' }}>
-                          Submited penmanship test page: "Neat printing, excellent line alignment, readable curves."
+                          Submitted penmanship test page: "Neat printing, excellent line alignment, readable curves."
                         </p>
                         <div style={{ display: 'flex', gap: '8px' }}>
                           <button style={{ flex: 1, fontSize: '10px', fontWeight: '800', padding: '6px', backgroundColor: 'var(--accent-green)', color: '#FFFFFF', border: '1px solid var(--border-editorial)' }}>APPROVE</button>
@@ -276,7 +277,7 @@ export const WorkflowShowcase: React.FC = () => {
 
                 {/* Footer disclaimer */}
                 <div style={{ fontSize: '10px', color: 'var(--text-muted)', borderTop: '1px solid var(--border-light)', paddingTop: '12px', textAlign: 'center' }}>
-                  Mockups simulate actual user interactions built in Phase 2 framework.
+                  Mockups simulate active user interactions built in Phase 2 framework.
                 </div>
               </div>
             </div>

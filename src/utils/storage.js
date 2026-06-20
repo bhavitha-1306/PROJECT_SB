@@ -1,12 +1,10 @@
-import type { Event, UserProfile, Registration, Comment } from '../types';
-
 const EVENTS_KEY = 'te_events';
 const REGISTRATIONS_KEY = 'te_registrations';
 const CURRENT_USER_KEY = 'te_current_user';
 const COMMENTS_KEY = 'te_comments';
 const USERS_LIST_KEY = 'te_users_list';
 
-const SEED_USERS: UserProfile[] = [
+const SEED_USERS = [
   {
     id: 'user-bhavitha',
     name: 'Bhavitha R',
@@ -74,7 +72,7 @@ const SEED_USERS: UserProfile[] = [
   }
 ];
 
-const SEED_EVENTS: Event[] = [
+const SEED_EVENTS = [
   {
     id: 'event-hack-for-hyd',
     title: 'Hack For Hyderabad 2026',
@@ -135,7 +133,7 @@ const SEED_EVENTS: Event[] = [
     hostName: 'Bhavitha R',
     hostAvatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&h=150&fit=crop',
     ticketPrice: 499,
-    capacity: 5, // Small capacity to demonstrate waitlist system easily!
+    capacity: 5,
     customQuestion: 'Link to your current portfolio or Figma file:',
     isFeatured: true,
     speakers: [
@@ -214,8 +212,7 @@ const SEED_EVENTS: Event[] = [
   }
 ];
 
-const SEED_REGISTRATIONS: Registration[] = [
-  // Hack for Hyd RSVPs
+const SEED_REGISTRATIONS = [
   {
     id: 'reg-1',
     eventId: 'event-hack-for-hyd',
@@ -252,8 +249,6 @@ const SEED_REGISTRATIONS: Registration[] = [
     teamName: 'Code Innovators',
     teamMembers: ['Bhavitha R', 'Rahul Sharma', 'Sneha Reddy']
   },
-  
-  // UI/UX Masterclass RSVPs (Max capacity is 5, let's fill it and add waitlist)
   {
     id: 'reg-4',
     eventId: 'event-uiux-masterclass',
@@ -301,7 +296,7 @@ const SEED_REGISTRATIONS: Registration[] = [
   {
     id: 'reg-8',
     eventId: 'event-uiux-masterclass',
-    userId: 'user-custom-host', // Host placeholder
+    userId: 'user-custom-host',
     userName: 'Pavan Kumar',
     userEmail: 'pavan@example.com',
     timestamp: '2026-06-09T10:20:00Z',
@@ -309,11 +304,10 @@ const SEED_REGISTRATIONS: Registration[] = [
     customAnswer: 'figma.com/design-pavan',
     paymentId: 'pay_mock_pavan202'
   },
-  // Waitlisted registrations (capacity is full at 5)
   {
     id: 'reg-9',
     eventId: 'event-uiux-masterclass',
-    userId: 'user-bhavitha', // Current user is on waitlist for this workshop!
+    userId: 'user-bhavitha',
     userName: 'Bhavitha R',
     userEmail: 'bhavitha@example.com',
     timestamp: '2026-06-09T11:00:00Z',
@@ -323,7 +317,7 @@ const SEED_REGISTRATIONS: Registration[] = [
   }
 ];
 
-const SEED_COMMENTS: Comment[] = [
+const SEED_COMMENTS = [
   {
     id: 'com-1',
     eventId: 'event-hack-for-hyd',
@@ -370,7 +364,7 @@ export const initializeStorage = () => {
     localStorage.setItem(REGISTRATIONS_KEY, JSON.stringify(SEED_REGISTRATIONS));
   }
   if (!localStorage.getItem(CURRENT_USER_KEY)) {
-    localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(SEED_USERS[0])); // Bhavitha is default user
+    localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(SEED_USERS[0]));
   }
   if (!localStorage.getItem(COMMENTS_KEY)) {
     localStorage.setItem(COMMENTS_KEY, JSON.stringify(SEED_COMMENTS));
@@ -381,42 +375,42 @@ export const initializeStorage = () => {
 };
 
 // Events Api
-export const getEvents = (): Event[] => {
+export const getEvents = () => {
   initializeStorage();
   return JSON.parse(localStorage.getItem(EVENTS_KEY) || '[]');
 };
 
-export const saveEvents = (events: Event[]) => {
+export const saveEvents = (events) => {
   localStorage.setItem(EVENTS_KEY, JSON.stringify(events));
 };
 
 // Registrations Api
-export const getRegistrations = (): Registration[] => {
+export const getRegistrations = () => {
   initializeStorage();
   return JSON.parse(localStorage.getItem(REGISTRATIONS_KEY) || '[]');
 };
 
-export const saveRegistrations = (registrations: Registration[]) => {
+export const saveRegistrations = (registrations) => {
   localStorage.setItem(REGISTRATIONS_KEY, JSON.stringify(registrations));
 };
 
 // Comments Api
-export const getComments = (): Comment[] => {
+export const getComments = () => {
   initializeStorage();
   return JSON.parse(localStorage.getItem(COMMENTS_KEY) || '[]');
 };
 
-export const saveComments = (comments: Comment[]) => {
+export const saveComments = (comments) => {
   localStorage.setItem(COMMENTS_KEY, JSON.stringify(comments));
 };
 
 // Current User Api
-export const getCurrentUser = (): UserProfile => {
+export const getCurrentUser = () => {
   initializeStorage();
   return JSON.parse(localStorage.getItem(CURRENT_USER_KEY) || '{}');
 };
 
-export const saveCurrentUser = (user: UserProfile) => {
+export const saveCurrentUser = (user) => {
   localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(user));
   
   // Also update in users list
@@ -429,11 +423,11 @@ export const saveCurrentUser = (user: UserProfile) => {
 };
 
 // All Users Api
-export const getUsers = (): UserProfile[] => {
+export const getUsers = () => {
   initializeStorage();
   return JSON.parse(localStorage.getItem(USERS_LIST_KEY) || '[]');
 };
 
-export const saveUsers = (users: UserProfile[]) => {
+export const saveUsers = (users) => {
   localStorage.setItem(USERS_LIST_KEY, JSON.stringify(users));
 };

@@ -1,13 +1,6 @@
 import React, { useState } from 'react';
 
-interface FontOption {
-  id: string;
-  name: string;
-  className: string;
-  style: string;
-}
-
-const FONTS: FontOption[] = [
+const FONTS = [
   { id: 'caveat', name: 'Elegant Cursive', className: 'font-caveat', style: "'Caveat', cursive" },
   { id: 'reenie', name: 'Quick Scribble', className: 'font-reenie', style: "'Reenie Beanie', cursive" },
   { id: 'architect', name: 'Neat Block Print', className: 'font-architect', style: "'Architects Daughter', sans-serif" },
@@ -27,14 +20,14 @@ const PAPER_STYLES = [
   { id: 'plain', name: 'Plain Paper', bg: 'none', size: 'auto' },
 ];
 
-export const HandwritingSimulator: React.FC = () => {
-  const [text, setText] = useState<string>(
+export const HandwritingSimulator = () => {
+  const [text, setText] = useState(
     "Dear Professor,\n\nHere is my completed assignment for the InkLink demo. I'm showcasing how realistic handwriting looks on this interactive platform. The service matches students with expert writers who write out work by hand with precision.\n\nBest regards,\nAlex"
   );
-  const [selectedFont, setSelectedFont] = useState<FontOption>(FONTS[0]);
+  const [selectedFont, setSelectedFont] = useState(FONTS[0]);
   const [selectedInk, setSelectedInk] = useState(INK_COLORS[0]);
   const [selectedPaper, setSelectedPaper] = useState(PAPER_STYLES[0]);
-  const [fontSize, setFontSize] = useState<number>(20);
+  const [fontSize, setFontSize] = useState(20);
 
   return (
     <div className="border-bottom" style={{ borderColor: 'var(--border-editorial)' }}>

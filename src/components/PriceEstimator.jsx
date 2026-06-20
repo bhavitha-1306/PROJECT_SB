@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 
-export const PriceEstimator: React.FC = () => {
-  const [pages, setPages] = useState<number>(10);
-  const [deadline, setDeadline] = useState<number>(3); // days
-  const [writerRank, setWriterRank] = useState<'standard' | 'gold' | 'elite'>('gold');
-  const [complexity, setComplexity] = useState<'text' | 'technical' | 'diagrams'>('text');
-  const [showInvoiceMsg, setShowInvoiceMsg] = useState<boolean>(false);
+export const PriceEstimator = () => {
+  const [pages, setPages] = useState(10);
+  const [deadline, setDeadline] = useState(3); // days
+  const [writerRank, setWriterRank] = useState('gold');
+  const [complexity, setComplexity] = useState('text');
+  const [showInvoiceMsg, setShowInvoiceMsg] = useState(false);
 
   // Pricing formula
   const getBaseRatePerPage = () => {
@@ -13,6 +13,7 @@ export const PriceEstimator: React.FC = () => {
       case 'standard': return 25; // Rs. 25 per page
       case 'gold': return 35;     // Rs. 35 per page
       case 'elite': return 50;    // Rs. 50 per page
+      default: return 35;
     }
   };
 
@@ -21,6 +22,7 @@ export const PriceEstimator: React.FC = () => {
       case 'text': return 1.0;
       case 'technical': return 1.3; // Math formulas take longer
       case 'diagrams': return 1.5;  // Drawing charts takes longer
+      default: return 1.0;
     }
   };
 
@@ -35,7 +37,7 @@ export const PriceEstimator: React.FC = () => {
   const platformFee = Math.round(totalPrice * 0.15);
   const writerPayout = totalPrice - platformFee;
 
-  const handleOrderSubmit = (e: React.FormEvent) => {
+  const handleOrderSubmit = (e) => {
     e.preventDefault();
     setShowInvoiceMsg(true);
     setTimeout(() => {
@@ -198,7 +200,7 @@ export const PriceEstimator: React.FC = () => {
                 </span>
                 <select
                   value={complexity}
-                  onChange={(e) => setComplexity(e.target.value as any)}
+                  onChange={(e) => setComplexity(e.target.value)}
                   style={{
                     padding: '12px',
                     border: '1.5px solid var(--border-editorial)',

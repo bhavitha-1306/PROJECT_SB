@@ -1,81 +1,31 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { HandwritingSimulator } from '../components/HandwritingSimulator';
 import { WorkflowShowcase } from '../components/WorkflowShowcase';
 import { PriceEstimator } from '../components/PriceEstimator';
 import { ArrowUpRight, Star, CheckCircle2 } from 'lucide-react';
+import { AuthModal } from '../components/AuthModal';
+import { getWriters } from '../utils/writers';
 
-interface WriterProfile {
-  id: string;
-  name: string;
-  avatar: string;
-  style: string;
-  background: string;
-  rating: number;
-  rate: number;
-  completed: number;
-  sampleText: string;
-}
-
-const WRITERS: WriterProfile[] = [
-  {
-    id: '1',
-    name: 'Neha Sharma',
-    avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=150&h=150&q=80',
-    style: 'Elegant Cursive',
-    background: 'BSc Chemistry Graduate',
-    rating: 4.9,
-    rate: 35,
-    completed: 184,
-    sampleText: 'Hydrogen bonds form when a hydrogen atom covalently bonded to a highly electronegative atom...'
-  },
-  {
-    id: '2',
-    name: 'Arjun Verma',
-    avatar: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=150&h=150&q=80',
-    style: 'Neat Block Print',
-    background: 'Engineering Student',
-    rating: 4.8,
-    rate: 30,
-    completed: 215,
-    sampleText: 'Integrate the function f(x) = 3x^2 + 2x from x=0 to x=5. Using the fundamental theorem of calculus...'
-  },
-  {
-    id: '3',
-    name: 'Pooja Singh',
-    avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=150&h=150&q=80',
-    style: 'Stylized Script',
-    background: 'BA English Literature',
-    rating: 5.0,
-    rate: 50,
-    completed: 96,
-    sampleText: 'The theme of duality in Stevenson\'s novel is primarily represented through the physical transformation...'
-  },
-  {
-    id: '4',
-    name: 'Ravi Patel',
-    avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=150&h=150&q=80',
-    style: 'Student Handwriting',
-    background: 'BCom Accounts Major',
-    rating: 4.7,
-    rate: 25,
-    completed: 312,
-    sampleText: 'Ledger Entry: Debit Cash Account, Credit Accounts Receivable. All balances are verified with worksheets.'
-  }
-];
-
-export const InkLinkLanding: React.FC = () => {
-  const [activeSampleWriter, setActiveSampleWriter] = useState<WriterProfile | null>(null);
+export const InkLinkLanding = ({ currentUser, onLoginSuccess, onLogout, onGoToDashboard, onGoToSignup }) => {
+  const [writers, setWriters] = useState(() => getWriters());
+  const [activeSampleWriter, setActiveSampleWriter] = useState(null);
   const [emailInput, setEmailInput] = useState('');
   const [newsletterSubscribed, setNewsletterSubscribed] = useState(false);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [authInitialTab, setAuthInitialTab] = useState('login');
 
-  const handleScrollTo = (elementId: string) => {
+  useEffect(() => {
+    setWriters(getWriters());
+  }, [currentUser]);
+
+  const handleScrollTo = (elementId) => {
     const el = document.getElementById(elementId);
     if (el) {
       el.scrollIntoView({ behavior: 'smooth' });
     }
   };
 
-  const handleSubscribe = (e: React.FormEvent) => {
+  const handleSubscribe = (e) => {
     e.preventDefault();
     if (emailInput.trim()) {
       setNewsletterSubscribed(true);
@@ -105,38 +55,78 @@ export const InkLinkLanding: React.FC = () => {
           </nav>
 
           <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
-            <button 
-              onClick={() => alert('Login flow simulator (Phase 2 feature)')}
-              style={{ fontSize: '14px', fontWeight: '600', color: 'var(--text-dark)', cursor: 'pointer', transition: 'var(--transition-smooth)' }}
-              onMouseOver={(e) => e.currentTarget.style.color = 'var(--accent-orange)'}
-              onMouseOut={(e) => e.currentTarget.style.color = 'var(--text-dark)'}
-            >
-              Login
-            </button>
-            <button 
-              onClick={() => alert('Sign up flow simulator (Phase 2 feature)')}
-              style={{ 
-                padding: '8px 18px', 
-                fontSize: '13px', 
-                fontWeight: '700', 
-                borderRadius: '9999px', 
-                backgroundColor: 'var(--border-editorial)', 
-                color: 'var(--bg-sand)',
-                border: '1.5px solid var(--border-editorial)',
-                cursor: 'pointer',
-                transition: 'var(--transition-smooth)'
-              }}
-              onMouseOver={(e) => {
-                e.currentTarget.style.backgroundColor = 'transparent';
-                e.currentTarget.style.color = 'var(--text-dark)';
-              }}
-              onMouseOut={(e) => {
-                e.currentTarget.style.backgroundColor = 'var(--border-editorial)';
-                e.currentTarget.style.color = 'var(--bg-sand)';
-              }}
-            >
-              Sign Up
-            </button>
+            {currentUser ? (
+              <>
+                <span style={{ fontSize: '13px', fontWeight: '700', color: 'var(--accent-orange)' }}>
+                  ● {currentUser.name} ({currentUser.role.toUpperCase()})
+                </span>
+                <button
+                  onClick={onGoToDashboard}
+                  style={{ 
+                    padding: '8px 18px', 
+                    fontSize: '13px', 
+                    fontWeight: '700', 
+                    borderRadius: '9999px', 
+                    backgroundColor: 'var(--border-editorial)', 
+                    color: 'var(--bg-sand)',
+                    border: '1.5px solid var(--border-editorial)',
+                    cursor: 'pointer',
+                    transition: 'var(--transition-smooth)'
+                  }}
+                  onMouseOver={(e) => {
+                    e.currentTarget.style.backgroundColor = 'transparent';
+                    e.currentTarget.style.color = 'var(--text-dark)';
+                  }}
+                  onMouseOut={(e) => {
+                    e.currentTarget.style.backgroundColor = 'var(--border-editorial)';
+                    e.currentTarget.style.color = 'var(--bg-sand)';
+                  }}
+                >
+                  Dashboard ↗
+                </button>
+                <button
+                  onClick={onLogout}
+                  style={{ fontSize: '13px', fontWeight: '600', color: 'var(--text-dark)', cursor: 'pointer' }}
+                >
+                  Logout
+                </button>
+              </>
+            ) : (
+              <>
+                <button 
+                  onClick={() => { setAuthInitialTab('login'); setIsAuthModalOpen(true); }}
+                  style={{ fontSize: '14px', fontWeight: '600', color: 'var(--text-dark)', cursor: 'pointer', transition: 'var(--transition-smooth)' }}
+                  onMouseOver={(e) => e.currentTarget.style.color = 'var(--accent-orange)'}
+                  onMouseOut={(e) => e.currentTarget.style.color = 'var(--text-dark)'}
+                >
+                  Login
+                </button>
+                <button 
+                  onClick={onGoToSignup}
+                  style={{ 
+                    padding: '8px 18px', 
+                    fontSize: '13px', 
+                    fontWeight: '700', 
+                    borderRadius: '9999px', 
+                    backgroundColor: 'var(--border-editorial)', 
+                    color: 'var(--bg-sand)',
+                    border: '1.5px solid var(--border-editorial)',
+                    cursor: 'pointer',
+                    transition: 'var(--transition-smooth)'
+                  }}
+                  onMouseOver={(e) => {
+                    e.currentTarget.style.backgroundColor = 'transparent';
+                    e.currentTarget.style.color = 'var(--text-dark)';
+                  }}
+                  onMouseOut={(e) => {
+                    e.currentTarget.style.backgroundColor = 'var(--border-editorial)';
+                    e.currentTarget.style.color = 'var(--bg-sand)';
+                  }}
+                >
+                  Sign Up
+                </button>
+              </>
+            )}
           </div>
         </div>
       </header>
@@ -224,10 +214,10 @@ export const InkLinkLanding: React.FC = () => {
               
               <div style={{ backgroundColor: '#FFFFFF', border: '2px solid var(--border-editorial)', padding: '24px', boxShadow: '6px 6px 0 var(--border-editorial)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '16px' }}>
-                  <img src={WRITERS[0].avatar} alt={WRITERS[0].name} style={{ width: '56px', height: '56px', borderRadius: '50%', border: '1.5px solid var(--border-editorial)', objectFit: 'cover' }} />
+                  <img src={writers[0]?.avatar} alt={writers[0]?.name} style={{ width: '56px', height: '56px', borderRadius: '50%', border: '1.5px solid var(--border-editorial)', objectFit: 'cover' }} />
                   <div>
-                    <h4 style={{ fontSize: '16px', fontWeight: '800' }}>{WRITERS[0].name}</h4>
-                    <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{WRITERS[0].background}</span>
+                    <h4 style={{ fontSize: '16px', fontWeight: '800' }}>{writers[0]?.name}</h4>
+                    <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{writers[0]?.background}</span>
                   </div>
                 </div>
                 
@@ -343,7 +333,7 @@ export const InkLinkLanding: React.FC = () => {
 
           {/* Writers Grid */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '24px' }}>
-            {WRITERS.map((writer) => (
+            {writers.map((writer) => (
               <div
                 key={writer.id}
                 onClick={() => setActiveSampleWriter(writer)}
@@ -425,6 +415,46 @@ export const InkLinkLanding: React.FC = () => {
                   </div>
                 </div>
 
+                {/* Real handwriting image samples (if uploaded) */}
+                {activeSampleWriter.images && activeSampleWriter.images.length > 0 && (
+                  <div style={{ marginBottom: '20px' }}>
+                    <span style={{ fontSize: '11px', fontWeight: '800', textTransform: 'uppercase', color: 'var(--text-muted)', display: 'block', marginBottom: '8px' }}>
+                      Real Handwriting Samples
+                    </span>
+                    <div style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '8px' }}>
+                      {activeSampleWriter.images.map((img, idx) => (
+                        <div 
+                          key={idx} 
+                          style={{ 
+                            flexShrink: 0, 
+                            width: '130px', 
+                            height: '130px', 
+                            border: '1.5px solid var(--border-editorial)', 
+                            boxShadow: '2px 2px 0 var(--border-editorial)', 
+                            backgroundColor: '#FFFFFF',
+                            overflow: 'hidden',
+                            position: 'relative'
+                          }}
+                        >
+                          <img 
+                            src={img} 
+                            alt={`Sample ${idx + 1}`} 
+                            style={{ width: '100%', height: '100%', objectFit: 'cover', cursor: 'pointer' }}
+                            onClick={() => {
+                              const w = window.open();
+                              w.document.write(`<img src="${img}" style="max-width:100%; max-height:100%; display:block; margin:auto;"/>`);
+                            }}
+                          />
+                        </div>
+                      ))}
+                    </div>
+                    <span style={{ fontSize: '9px', color: 'var(--text-muted)' }}>* Click any sample to view in full size</span>
+                  </div>
+                )}
+
+                <span style={{ fontSize: '11px', fontWeight: '800', textTransform: 'uppercase', color: 'var(--text-muted)', display: 'block', marginBottom: '8px' }}>
+                  Font Simulation Preview
+                </span>
                 <div style={{ backgroundColor: '#FAF9F5', border: '1.5px solid var(--border-editorial)', padding: '24px', position: 'relative', backgroundImage: 'linear-gradient(rgba(16, 67, 202, 0.05) 1px, transparent 1px)', backgroundSize: '100% 24px' }}>
                   <div style={{ position: 'absolute', top: 0, left: '24px', width: '1px', height: '100%', backgroundColor: 'rgba(255,0,0,0.15)' }}></div>
                   <p style={{
@@ -557,6 +587,12 @@ export const InkLinkLanding: React.FC = () => {
         </div>
       </footer>
 
+      <AuthModal
+        isOpen={isAuthModalOpen}
+        onClose={() => setIsAuthModalOpen(false)}
+        onSuccess={onLoginSuccess}
+        initialTab={authInitialTab}
+      />
     </div>
   );
 };
