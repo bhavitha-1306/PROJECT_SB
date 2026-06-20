@@ -16,7 +16,12 @@ import {
   Send,
   Info,
   Check,
-  ChevronRight
+  ChevronRight,
+  Truck,
+  Upload,
+  Mail,
+  MapPin,
+  Clock
 } from 'lucide-react';
 import { getWriters } from '../utils/writers';
 
@@ -33,7 +38,8 @@ export const ClientDashboard = ({ user, onLogout, onGoBack }) => {
       name: user.name,
       email: user.email,
       phone: '9876543210',
-      college: 'Hyderabad Central University'
+      college: 'Hyderabad Central University',
+      address: 'Flat 304, Cyber Heights, Gachibowli, Hyderabad'
     };
   });
 
@@ -59,9 +65,13 @@ export const ClientDashboard = ({ user, onLogout, onGoBack }) => {
   const [orderPenType, setOrderPenType] = useState(preferences.penType);
   const [orderPaperStyle, setOrderPaperStyle] = useState(preferences.paperStyle);
   const [orderMarginSize, setOrderMarginSize] = useState(preferences.marginSize);
+  const [orderDeliveryFormat, setOrderDeliveryFormat] = useState('digital'); // 'digital' | 'physical'
+  const [uploadedPromptFile, setUploadedPromptFile] = useState(null);
 
-  // Writers Directory search
+  // Writers Directory search & Invite Modal
   const [searchWriterQuery, setSearchWriterQuery] = useState('');
+  const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
+  const [inviteEmail, setInviteEmail] = useState('');
 
   // Active Chats State
   const [chatChannels, setChatChannels] = useState({});
@@ -71,8 +81,15 @@ export const ClientDashboard = ({ user, onLogout, onGoBack }) => {
   // Transactions / Escrow Ledger State
   const [transactions, setTransactions] = useState([]);
 
-  // Scan modal preview state
+  // Modals state
   const [activeScanOrder, setActiveScanOrder] = useState(null);
+  const [activeTrackOrder, setActiveTrackOrder] = useState(null);
+  
+  // Dispute logging dictionary
+  const [disputeLogs, setDisputeLogs] = useState(() => {
+    const saved = localStorage.getItem(`inklink_disputes_${user.email}`);
+    return saved ? JSON.parse(saved) : {};
+  });
 
   // Filters for assignments list
   const [assignmentFilter, setAssignmentFilter] = useState('all');
@@ -100,7 +117,8 @@ export const ClientDashboard = ({ user, onLogout, onGoBack }) => {
           inkColor: 'Blue',
           penType: 'Gel',
           paperStyle: 'Ruled',
-          marginSize: 'Standard (1 inch)'
+          marginSize: 'Standard (1 inch)',
+          deliveryFormat: 'digital'
         },
         {
           id: '2',
@@ -118,6 +136,7 @@ export const ClientDashboard = ({ user, onLogout, onGoBack }) => {
           penType: 'Gel',
           paperStyle: 'Ruled',
           marginSize: 'Standard (1 inch)',
+          deliveryFormat: 'digital',
           scanUrl: 'true'
         }
       ];
@@ -173,7 +192,7 @@ export const ClientDashboard = ({ user, onLogout, onGoBack }) => {
     localStorage.setItem(`inklink_transactions_${user.email}`, JSON.stringify(updated));
   };
 
-  // Pricing calculations based on chosen writer or base rates
+  // Pricing calculations based on chosen writer, base rates, and physical delivery
   const getSelectedWriterObj = () => {
     if (targetWriterId === 'pool') return null;
     return writersList.find(w => w.id === targetWriterId);
@@ -190,8 +209,21 @@ export const ClientDashboard = ({ user, onLogout, onGoBack }) => {
     return 1.0;
   };
 
+  const getCourierFee = () => {
+    return orderDeliveryFormat === 'physical' ? 80 : 0;
+  };
+
   const pricePerPage = Math.round(getBaseRate() * getMultiplier());
-  const calculatedPrice = pricePerPage * pages;
+  const calculatedPrice = pricePerPage * pages + getCourierFee();
+
+  // Simulated Requirement File Upload with AI Extracted Pages
+  const handleSimulatedFileUpload = () => {
+    setUploadedPromptFile('coursework_syllabus_unit4.pdf');
+    // Extract random pages count between 8 and 25
+    const extractedPages = Math.floor(Math.random() * 18 + 8);
+    setPages(extractedPages);
+    alert(`File uploaded! InkLink Prompt AI analyzed unit4.pdf and auto-extracted requirements for ${extractedPages} handwritten pages.`);
+  };
 
   // Post Order Handler
   const handleCreateOrder = (e) => {
@@ -216,7 +248,9 @@ export const ClientDashboard = ({ user, onLogout, onGoBack }) => {
       inkColor: orderInkColor,
       penType: orderPenType,
       paperStyle: orderPaperStyle,
-      marginSize: orderMarginSize
+      marginSize: orderMarginSize,
+      deliveryFormat: orderDeliveryFormat,
+      promptFile: uploadedPromptFile
     };
 
     // Save assignments
@@ -238,13 +272,15 @@ export const ClientDashboard = ({ user, onLogout, onGoBack }) => {
     // Sync notification log
     const prevAlerts = JSON.parse(localStorage.getItem('inklink_notifications') || '[]');
     localStorage.setItem('inklink_notifications', JSON.stringify([
-      { id: Date.now(), text: `New Assignment "${title}" posted to Writer Pool with ₹${calculatedPrice} locked in escrow.`, time: 'Just now' },
+      { id: Date.now(), text: `New Assignment "${title}" posted. ₹${calculatedPrice} locked in escrow contract.`, time: 'Just now' },
       ...prevAlerts
     ]));
 
     // Reset Form
     setTitle('');
+    setUploadedPromptFile(null);
     setTargetWriterId('pool');
+    setOrderDeliveryFormat('digital');
     setActiveTab('assignments');
     alert(`Order posted successfully! ₹${calculatedPrice} locked in escrow.`);
   };
@@ -342,6 +378,9 @@ export const ClientDashboard = ({ user, onLogout, onGoBack }) => {
 
   // Dispute Order
   const handleDisputeAssignment = (order) => {
+    const reason = prompt('Please describe your dispute details (e.g. wrong pen color, blurred scans, incomplete assignment):');
+    if (!reason || !reason.trim()) return;
+
     const updated = assignments.map(a => {
       if (a.id === order.id) {
         return { ...a, status: 'disputed' };
@@ -349,6 +388,22 @@ export const ClientDashboard = ({ user, onLogout, onGoBack }) => {
       return a;
     });
     saveAssignments(updated);
+
+    // Save dispute details log locally
+    const newDisputeLogs = {
+      ...disputeLogs,
+      [order.id]: {
+        reason: reason.trim(),
+        timestamp: new Date().toLocaleString(),
+        status: 'Under Investigation',
+        log: [
+          { time: 'Just now', msg: 'Dispute submitted by client. Escrow funds locked on contract.' },
+          { time: 'Just now', msg: 'Admin whitelisted investigator assigned to verify scan resolution.' }
+        ]
+      }
+    };
+    setDisputeLogs(newDisputeLogs);
+    localStorage.setItem(`inklink_disputes_${user.email}`, JSON.stringify(newDisputeLogs));
 
     // Update transaction
     const updatedTxns = transactions.map(t => {
@@ -371,6 +426,16 @@ export const ClientDashboard = ({ user, onLogout, onGoBack }) => {
     saveTransactions([disputeTxn, ...updatedTxns]);
     setActiveScanOrder(null);
     alert(`Dispute ticket raised. InkLink Admin has been notified, and escrow funds are locked.`);
+  };
+
+  // Send external writer invite
+  const handleSendInvite = (e) => {
+    e.preventDefault();
+    if (!inviteEmail) return;
+
+    alert(`Invitation sent to ${inviteEmail}!\nLink: http://localhost:5173/join-writer?ref=${user.name.replace(/\s+/g, '')}\n(Simulated mail delivery successful)`);
+    setInviteEmail('');
+    setIsInviteModalOpen(false);
   };
 
   // Save profile edits
@@ -401,7 +466,7 @@ export const ClientDashboard = ({ user, onLogout, onGoBack }) => {
       if (assignmentFilter === 'all') return true;
       if (assignmentFilter === 'pending') return a.status === 'pending';
       if (assignmentFilter === 'writing') return a.status === 'accepted' || a.status === 'writing started';
-      if (assignmentFilter === 'completed') return a.status === 'completed' || a.status === 'approved';
+      if (assignmentFilter === 'completed') return a.status === 'completed' || a.status === 'out of delivery' || a.status === 'delivered' || a.status === 'approved';
       if (assignmentFilter === 'disputed') return a.status === 'disputed';
       return true;
     });
@@ -571,7 +636,7 @@ export const ClientDashboard = ({ user, onLogout, onGoBack }) => {
                   { id: 'all', label: 'All Jobs' },
                   { id: 'pending', label: 'Awaiting Claims' },
                   { id: 'writing', label: 'In Progress' },
-                  { id: 'completed', label: 'Completed / Approved' },
+                  { id: 'completed', label: 'Completed / Delivery' },
                   { id: 'disputed', label: 'Disputes' }
                 ].map(f => (
                   <button
@@ -622,8 +687,13 @@ export const ClientDashboard = ({ user, onLogout, onGoBack }) => {
                     {/* Upper row: title, id, price, status */}
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '1px solid var(--border-light)', paddingBottom: '12px' }}>
                       <div>
-                        <span style={{ fontSize: '10px', fontWeight: '800', textTransform: 'uppercase', color: 'var(--text-muted)', fontFamily: 'monospace' }}>ID: {ord.id}</span>
-                        <h3 style={{ fontSize: '18px', fontWeight: '900', margin: '4px 0 6px 0' }}>{ord.title}</h3>
+                        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                          <span style={{ fontSize: '10px', fontWeight: '800', textTransform: 'uppercase', color: 'var(--text-muted)', fontFamily: 'monospace' }}>ID: {ord.id}</span>
+                          <span style={{ fontSize: '9px', fontWeight: '800', textTransform: 'uppercase', padding: '1px 6px', border: '1px solid var(--border-editorial)', backgroundColor: 'var(--bg-sand)' }}>
+                            {ord.deliveryFormat === 'physical' ? "🚚 Physical courier" : "📧 Digital PDF scan"}
+                          </span>
+                        </div>
+                        <h3 style={{ fontSize: '18px', fontWeight: '900', margin: '6px 0' }}>{ord.title}</h3>
                         <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', fontSize: '11px', color: 'var(--text-muted)' }}>
                           <span>Subject: <strong>{ord.subject}</strong></span>
                           <span>•</span>
@@ -647,6 +717,8 @@ export const ClientDashboard = ({ user, onLogout, onGoBack }) => {
                                              ord.status === 'accepted' ? 'var(--accent-ink)' :
                                              ord.status === 'writing started' ? 'var(--accent-ink)' :
                                              ord.status === 'completed' ? 'var(--accent-green)' :
+                                             ord.status === 'out of delivery' ? '#7C3AED' :
+                                             ord.status === 'delivered' ? 'var(--accent-green)' :
                                              ord.status === 'approved' ? 'var(--accent-green)' : '#E11D48'
                           }}
                         >
@@ -655,6 +727,27 @@ export const ClientDashboard = ({ user, onLogout, onGoBack }) => {
                         <div style={{ fontSize: '20px', fontWeight: '900', marginTop: '8px', color: 'var(--text-dark)' }}>₹{ord.price}</div>
                       </div>
                     </div>
+
+                    {/* Dispute Detail block (if active) */}
+                    {ord.status === 'disputed' && disputeLogs[ord.id] && (
+                      <div style={{ backgroundColor: '#FFE4E6', border: '1.5px solid #FDA4AF', padding: '16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#E11D48', fontWeight: '800', fontSize: '12px' }}>
+                          <ShieldAlert size={16} />
+                          <span>Quality Dispute Registered</span>
+                        </div>
+                        <p style={{ fontSize: '12px', color: 'var(--text-dark)' }}>
+                          <strong>Reason:</strong> "{disputeLogs[ord.id].reason}"
+                        </p>
+                        <div style={{ fontSize: '10px', color: 'var(--text-muted)' }}>
+                          <strong>Investigator Log:</strong>
+                          <ul style={{ paddingLeft: '16px', marginTop: '4px', listStyleType: 'circle' }}>
+                            {disputeLogs[ord.id].log.map((l, i) => (
+                              <li key={i}>{l.time}: {l.msg}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      </div>
+                    )}
 
                     {/* Lower row: Assigned writer & actions */}
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -678,7 +771,7 @@ export const ClientDashboard = ({ user, onLogout, onGoBack }) => {
                       </div>
 
                       {/* Action buttons */}
-                      <div style={{ display: 'flex', gap: '8px' }}>
+                      <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                         {ord.writerId && (
                           <button
                             onClick={() => handleTriggerChat(ord.writerId, ord.writerName)}
@@ -699,7 +792,16 @@ export const ClientDashboard = ({ user, onLogout, onGoBack }) => {
                           </button>
                         )}
 
-                        {ord.status === 'completed' && (
+                        {ord.status === 'writing started' && (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '11px', color: 'var(--accent-ink)' }}>
+                            <div style={{ width: '60px', height: '6px', backgroundColor: 'rgba(16, 67, 202, 0.1)', borderRadius: '3px', overflow: 'hidden' }}>
+                              <div style={{ width: '40%', height: '100%', backgroundColor: 'var(--accent-ink)' }} />
+                            </div>
+                            <span>40% written</span>
+                          </div>
+                        )}
+
+                        {(ord.status === 'completed' || ord.status === 'out of delivery' || ord.status === 'delivered') && (
                           <button
                             onClick={() => setActiveScanOrder(ord)}
                             style={{
@@ -721,15 +823,37 @@ export const ClientDashboard = ({ user, onLogout, onGoBack }) => {
                           </button>
                         )}
 
+                        {(ord.status === 'out of delivery' || ord.status === 'delivered') && (
+                          <button
+                            onClick={() => setActiveTrackOrder(ord)}
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '6px',
+                              padding: '8px 14px',
+                              fontSize: '11px',
+                              fontWeight: '800',
+                              backgroundColor: '#7C3AED',
+                              color: '#FFFFFF',
+                              border: '1.5px solid var(--border-editorial)',
+                              cursor: 'pointer',
+                              boxShadow: '2px 2px 0 var(--border-editorial)'
+                            }}
+                          >
+                            <Truck size={13} />
+                            Track Delivery
+                          </button>
+                        )}
+
                         {ord.status === 'approved' && (
                           <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: 'var(--accent-green)', fontWeight: '700' }}>
-                            <CheckCircle2 size={14} /> Approved
+                            <CheckCircle2 size={14} /> Approved & Released
                           </div>
                         )}
 
                         {ord.status === 'disputed' && (
                           <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: '#E11D48', fontWeight: '700' }}>
-                            <ShieldAlert size={14} /> Under Review
+                            <ShieldAlert size={14} /> Hold Active
                           </div>
                         )}
                       </div>
@@ -822,6 +946,34 @@ export const ClientDashboard = ({ user, onLogout, onGoBack }) => {
                   </div>
                 </div>
 
+                {/* Simulated Requirement PDF drag zone */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <label style={{ fontSize: '11px', fontWeight: '800', textTransform: 'uppercase' }}>Syllabus / Prompt Document (Optional)</label>
+                  <div 
+                    onClick={handleSimulatedFileUpload}
+                    style={{
+                      border: '2px dashed var(--border-editorial)',
+                      backgroundColor: 'var(--bg-sand)',
+                      padding: '20px',
+                      textAlign: 'center',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      gap: '8px',
+                      transition: 'background-color 0.2s'
+                    }}
+                    onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#EBE9E2'}
+                    onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'var(--bg-sand)'}
+                  >
+                    <Upload size={20} style={{ color: 'var(--text-muted)' }} />
+                    <span style={{ fontSize: '12px', fontWeight: '700' }}>
+                      {uploadedPromptFile ? `Uploaded: ${uploadedPromptFile}` : "Upload Brief PDF to auto-extract pages count"}
+                    </span>
+                    <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>Auto page detection sandbox</span>
+                  </div>
+                </div>
+
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                     <label style={{ fontSize: '11px', fontWeight: '800', textTransform: 'uppercase' }}>Complexity Grade</label>
@@ -885,6 +1037,47 @@ export const ClientDashboard = ({ user, onLogout, onGoBack }) => {
                       </option>
                     ))}
                   </select>
+                </div>
+
+                {/* Delivery format radio buttons */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <label style={{ fontSize: '11px', fontWeight: '800', textTransform: 'uppercase' }}>Delivery Format</label>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                    <button
+                      type="button"
+                      onClick={() => setOrderDeliveryFormat('digital')}
+                      style={{
+                        padding: '10px',
+                        border: '1.5px solid var(--border-editorial)',
+                        backgroundColor: orderDeliveryFormat === 'digital' ? 'var(--border-editorial)' : '#FFFFFF',
+                        color: orderDeliveryFormat === 'digital' ? 'var(--bg-sand)' : 'var(--text-dark)',
+                        fontSize: '12px',
+                        fontWeight: '800',
+                        textTransform: 'uppercase',
+                        boxShadow: orderDeliveryFormat === 'digital' ? 'none' : '2px 2px 0 var(--border-editorial)',
+                        transform: orderDeliveryFormat === 'digital' ? 'translate(1px, 1px)' : 'none'
+                      }}
+                    >
+                      Digital PDF Scan
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setOrderDeliveryFormat('physical')}
+                      style={{
+                        padding: '10px',
+                        border: '1.5px solid var(--border-editorial)',
+                        backgroundColor: orderDeliveryFormat === 'physical' ? 'var(--border-editorial)' : '#FFFFFF',
+                        color: orderDeliveryFormat === 'physical' ? 'var(--bg-sand)' : 'var(--text-dark)',
+                        fontSize: '12px',
+                        fontWeight: '800',
+                        textTransform: 'uppercase',
+                        boxShadow: orderDeliveryFormat === 'physical' ? 'none' : '2px 2px 0 var(--border-editorial)',
+                        transform: orderDeliveryFormat === 'physical' ? 'translate(1px, 1px)' : 'none'
+                      }}
+                    >
+                      Physical Courier (+₹80)
+                    </button>
+                  </div>
                 </div>
 
                 {/* Styling preferences (override client defaults) */}
@@ -960,6 +1153,12 @@ export const ClientDashboard = ({ user, onLogout, onGoBack }) => {
                       <span>Pages Count:</span>
                       <span>{pages} sheets</span>
                     </div>
+                    {orderDeliveryFormat === 'physical' && (
+                      <div style={{ display: 'flex', justifyContent: 'space-between', color: 'var(--accent-orange)' }}>
+                        <span>Physical Courier Charge:</span>
+                        <span>+₹80</span>
+                      </div>
+                    )}
                   </div>
 
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -997,7 +1196,7 @@ export const ClientDashboard = ({ user, onLogout, onGoBack }) => {
         {activeTab === 'writers' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
             
-            {/* Search and summary */}
+            {/* Search and invite buttons */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#FFFFFF', padding: '16px 24px', border: '1.5px solid var(--border-editorial)', boxShadow: '3px 3px 0 var(--border-editorial)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexGrow: 1, maxWidth: '480px' }}>
                 <Search size={18} style={{ color: 'var(--text-muted)' }} />
@@ -1009,8 +1208,25 @@ export const ClientDashboard = ({ user, onLogout, onGoBack }) => {
                   style={{ width: '100%', fontSize: '13px', outline: 'none' }}
                 />
               </div>
-              <div style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: '700' }}>
-                Vetted Registry: {writersList.length} Penmen Active
+              <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                <button 
+                  onClick={() => setIsInviteModalOpen(true)}
+                  style={{
+                    padding: '8px 16px',
+                    fontSize: '11px',
+                    fontWeight: '800',
+                    textTransform: 'uppercase',
+                    border: '1.5px solid var(--border-editorial)',
+                    boxShadow: '2px 2px 0 var(--border-editorial)',
+                    backgroundColor: 'var(--bg-sand)',
+                    cursor: 'pointer'
+                  }}
+                >
+                  Invite External Writer ↗
+                </button>
+                <div style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: '700' }}>
+                  Vetted Registry: {writersList.length} Penmen Active
+                </div>
               </div>
             </div>
 
@@ -1421,6 +1637,17 @@ export const ClientDashboard = ({ user, onLogout, onGoBack }) => {
                   />
                 </div>
 
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  <label style={{ fontSize: '11px', fontWeight: '800', textTransform: 'uppercase' }}>Mailing Shipping Address</label>
+                  <textarea
+                    rows="3"
+                    value={profile.address}
+                    onChange={(e) => setProfile(prev => ({ ...prev, address: e.target.value }))}
+                    style={{ padding: '10px', border: '1.5px solid var(--border-editorial)', outline: 'none', backgroundColor: 'var(--bg-sand)', fontSize: '13px', resize: 'vertical' }}
+                    placeholder="Enter physical doorstep delivery address..."
+                  />
+                </div>
+
                 <button
                   type="submit"
                   style={{
@@ -1602,6 +1829,187 @@ export const ClientDashboard = ({ user, onLogout, onGoBack }) => {
               </div>
             </div>
 
+          </div>
+        </div>
+      )}
+
+      {/* 4. MODAL: Track Delivery Courier */}
+      {activeTrackOrder && (
+        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 999, padding: '20px' }}>
+          <div style={{ backgroundColor: '#FFFFFF', border: '2px solid var(--border-editorial)', width: '100%', maxWidth: '480px', boxShadow: '8px 8px 0 var(--border-editorial)' }}>
+            
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 20px', borderBottom: '1.5px solid var(--border-editorial)', backgroundColor: 'var(--bg-sand)' }}>
+              <h4 style={{ fontSize: '13px', margin: 0, fontWeight: '900', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <Truck size={16} /> Track Notebook Courier
+              </h4>
+              <button onClick={() => setActiveTrackOrder(null)} style={{ fontSize: '18px', fontWeight: '900', cursor: 'pointer' }}>×</button>
+            </div>
+
+            <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+              
+              {/* Route Progress Map Simulation */}
+              <div style={{ backgroundColor: '#FAF9F6', border: '1.5px solid var(--border-editorial)', padding: '20px', position: 'relative', overflow: 'hidden' }}>
+                <span style={{ fontSize: '10px', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: '800', display: 'block', marginBottom: '12px' }}>
+                  Live Delivery Route
+                </span>
+                
+                <div style={{ display: 'flex', justifycontent: 'space-between', alignItems: 'center', position: 'relative', padding: '10px 0' }}>
+                  {/* Background line */}
+                  <div style={{ position: 'absolute', top: '50%', left: 0, width: '100%', height: '3px', backgroundColor: 'var(--border-light)', transform: 'translateY(-50%)', zIndex: 1 }} />
+                  
+                  {/* Active line */}
+                  <div style={{ position: 'absolute', top: '50%', left: 0, width: activeTrackOrder.status === 'delivered' ? '100%' : '75%', height: '3px', backgroundColor: 'var(--accent-green)', transform: 'translateY(-50%)', zIndex: 2 }} />
+
+                  {/* Node 1: Dispatch */}
+                  <div style={{ width: '24px', height: '24px', borderRadius: '50%', backgroundColor: 'var(--border-editorial)', border: '2px solid #FFFFFF', zIndex: 3, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <Check size={12} color="#FFFFFF" />
+                  </div>
+                  
+                  {/* Node 2: Hub */}
+                  <div style={{ width: '24px', height: '24px', borderRadius: '50%', backgroundColor: 'var(--border-editorial)', border: '2px solid #FFFFFF', zIndex: 3, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <Check size={12} color="#FFFFFF" />
+                  </div>
+
+                  {/* Node 3: Out for Delivery */}
+                  <div style={{ width: '24px', height: '24px', borderRadius: '50%', backgroundColor: activeTrackOrder.status === 'delivered' ? 'var(--border-editorial)' : 'var(--accent-orange)', border: '2px solid #FFFFFF', zIndex: 3, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    {activeTrackOrder.status === 'delivered' ? <Check size={12} color="#FFFFFF" /> : <Clock size={12} color="#FFFFFF" />}
+                  </div>
+
+                  {/* Node 4: Destination */}
+                  <div style={{ width: '24px', height: '24px', borderRadius: '50%', backgroundColor: activeTrackOrder.status === 'delivered' ? 'var(--accent-green)' : '#FFFFFF', border: '2px solid var(--border-editorial)', zIndex: 3, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    {activeTrackOrder.status === 'delivered' && <Check size={12} color="#FFFFFF" />}
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '9px', fontWeight: '800', color: 'var(--text-muted)', textTransform: 'uppercase', marginTop: '6px' }}>
+                  <span>Dispatched</span>
+                  <span>Sort Hub</span>
+                  <span>Out/Transit</span>
+                  <span>Received</span>
+                </div>
+              </div>
+
+              {/* Delivery logs */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <span style={{ fontSize: '10px', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: '800' }}>Transit Log</span>
+                
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '12px' }}>
+                  <div style={{ display: 'flex', gap: '12px', borderLeft: '2px solid var(--accent-green)', paddingLeft: '12px' }}>
+                    <strong style={{ color: 'var(--text-muted)' }}>02:40 PM</strong>
+                    <span>Courier partner has reached recipient location.</span>
+                  </div>
+                  <div style={{ display: 'flex', gap: '12px', borderLeft: '2px solid var(--accent-green)', paddingLeft: '12px' }}>
+                    <strong style={{ color: 'var(--text-muted)' }}>02:15 PM</strong>
+                    <span>Shipment picked up by delivery executive.</span>
+                  </div>
+                  <div style={{ display: 'flex', gap: '12px', borderLeft: '2px solid var(--border-light)', paddingLeft: '12px' }}>
+                    <strong style={{ color: 'var(--text-muted)' }}>02:00 PM</strong>
+                    <span>Order packages labeled and dispatched from writer's chamber.</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Sandbox OTP Helper */}
+              {activeTrackOrder.status !== 'delivered' && (
+                <div style={{ backgroundColor: 'rgba(124, 58, 237, 0.05)', border: '1px solid rgba(124, 58, 237, 0.2)', padding: '16px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#7C3AED', fontWeight: '800', fontSize: '12px' }}>
+                    <Info size={16} />
+                    <span>Sandbox Courier Handshake</span>
+                  </div>
+                  <p style={{ fontSize: '12px', lineHeight: '1.4' }}>
+                    The courier partner requires a secure delivery verification passcode. Please provide the writer with the following OTP to sign off:
+                  </p>
+                  <div style={{ alignSelf: 'center', fontSize: '20px', fontFamily: 'monospace', fontWeight: '900', letterSpacing: '4px', backgroundColor: '#FFFFFF', border: '1.5px solid #7C3AED', padding: '6px 16px', marginTop: '4px' }}>
+                    1234
+                  </div>
+                </div>
+              )}
+
+              <button
+                onClick={() => setActiveTrackOrder(null)}
+                style={{
+                  width: '100%',
+                  backgroundColor: 'var(--border-editorial)',
+                  color: 'var(--bg-sand)',
+                  padding: '12px',
+                  fontWeight: '800',
+                  fontSize: '12px',
+                  textTransform: 'uppercase',
+                  border: '1.5px solid var(--border-editorial)',
+                  cursor: 'pointer'
+                }}
+              >
+                Close Tracking Drawer
+              </button>
+
+            </div>
+
+          </div>
+        </div>
+      )}
+
+      {/* 5. MODAL: Invite Writer Form */}
+      {isInviteModalOpen && (
+        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 999, padding: '20px' }}>
+          <div style={{ backgroundColor: '#FFFFFF', border: '2px solid var(--border-editorial)', width: '100%', maxWidth: '420px', boxShadow: '8px 8px 0 var(--border-editorial)' }}>
+            
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '16px 20px', borderBottom: '1.5px solid var(--border-editorial)', backgroundColor: 'var(--bg-sand)' }}>
+              <h4 style={{ fontSize: '13px', margin: 0, fontWeight: '900' }}>Invite External Penman</h4>
+              <button onClick={() => setIsInviteModalOpen(false)} style={{ fontSize: '18px', fontWeight: '900', cursor: 'pointer' }}>×</button>
+            </div>
+
+            <form onSubmit={handleSendInvite} style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <p style={{ fontSize: '12px', color: 'var(--text-muted)', lineHeight: '1.4' }}>
+                Know a writer with outstanding penmanship? Invite them to whitelist their handwriting style on InkLink! They can claim your orders directly.
+              </p>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <label style={{ fontSize: '11px', fontWeight: '800' }}>Writer's Email Address *</label>
+                <input
+                  type="email"
+                  required
+                  placeholder="writer@example.com"
+                  value={inviteEmail}
+                  onChange={(e) => setInviteEmail(e.target.value)}
+                  style={{ padding: '10px', border: '1.5px solid var(--border-editorial)', fontSize: '13px', outline: 'none' }}
+                />
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                <label style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: '800' }}>Share Invitation Link Directly</label>
+                <div style={{ display: 'flex', border: '1.5px solid var(--border-editorial)', backgroundColor: 'var(--bg-sand)', padding: '6px' }}>
+                  <input
+                    type="text"
+                    readOnly
+                    value={`http://localhost:5173/join-writer?ref=${user.name.replace(/\s+/g, '')}`}
+                    style={{ flexGrow: 1, fontSize: '11px', outline: 'none', cursor: 'pointer', fontFamily: 'monospace' }}
+                    onClick={(e) => {
+                      e.target.select();
+                      navigator.clipboard.writeText(e.target.value);
+                      alert('Copied to clipboard!');
+                    }}
+                  />
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                style={{
+                  backgroundColor: 'var(--accent-orange)',
+                  color: '#FFFFFF',
+                  padding: '12px',
+                  fontWeight: '800',
+                  fontSize: '12px',
+                  textTransform: 'uppercase',
+                  border: '1.5px solid var(--border-editorial)',
+                  boxShadow: '3px 3px 0 var(--border-editorial)',
+                  cursor: 'pointer',
+                  marginTop: '8px'
+                }}
+              >
+                Send Invitation Email ↗
+              </button>
+            </form>
           </div>
         </div>
       )}
